@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { copyHtml } from "../core/copy/copyHtml";
 import { buildWechatOutput } from "../core/platform/wechatAdapter";
 import { renderMarkdown } from "../core/markdown/renderMarkdown";
@@ -17,6 +18,12 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
   const warnings = useEditorStore((state) => state.warnings);
   const setCopyStatus = useEditorStore((state) => state.setCopyStatus);
   const setWarnings = useEditorStore((state) => state.setWarnings);
+  const [copyDialog, setCopyDialog] = useState<{
+    title: string;
+    message: string;
+    warnings: string[];
+    tone: "success" | "error";
+  } | null>(null);
 
   const handleCopyWechat = async () => {
     setCopyStatus("copying", "正在生成公众号 HTML...");
@@ -25,19 +32,35 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
       const rendered = renderMarkdown({
         markdown: markdownValue,
       });
-      const output = buildWechatOutput({
+      const output = await buildWechatOutput({
         rawHtml: rendered.rawHtml,
         theme: getThemeById(themeId),
         warnings: rendered.warnings,
       });
       const result = await copyHtml(output);
+      const hasWarnings = output.warnings.length > 0;
+      const resultTitle = result.ok ? (hasWarnings ? "已复制，但有兼容提醒" : "复制成功") : "复制失败";
+      const resultMessage =
+        result.ok && hasWarnings ? `${result.message} 请查看下方兼容提醒。` : result.message;
 
       setWarnings(output.warnings);
-      setCopyStatus(result.ok ? "success" : "error", result.message);
+      setCopyStatus(result.ok ? "success" : "error", resultMessage);
+      setCopyDialog({
+        title: resultTitle,
+        message: resultMessage,
+        warnings: output.warnings,
+        tone: result.ok ? "success" : "error",
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "复制失败，请检查浏览器权限。";
       setWarnings([message]);
       setCopyStatus("error", message);
+      setCopyDialog({
+        title: "复制失败",
+        message,
+        warnings: [message],
+        tone: "error",
+      });
     }
   };
 
@@ -61,6 +84,26 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
           {warnings.map((warning) => (
             <span key={warning}>{warning}</span>
           ))}
+        </div>
+      )}
+      {copyDialog && (
+        <div className="copy-dialog-backdrop" role="presentation">
+          <div className={`copy-dialog copy-dialog-${copyDialog.tone}`} role="alertdialog" aria-modal="true">
+            <div className="copy-dialog-header">
+              <h2>{copyDialog.title}</h2>
+              <button type="button" aria-label="关闭复制结果" onClick={() => setCopyDialog(null)}>
+                ×
+              </button>
+            </div>
+            <p>{copyDialog.message}</p>
+            {copyDialog.warnings.length > 0 && (
+              <ul>
+                {copyDialog.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </header>

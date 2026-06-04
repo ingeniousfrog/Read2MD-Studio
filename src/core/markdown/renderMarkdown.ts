@@ -1,5 +1,6 @@
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
+import { katexPlugin } from "./katexPlugin";
 
 export interface RenderMarkdownInput {
   markdown: string;
@@ -37,6 +38,20 @@ const markdown = new MarkdownIt({
     }
   },
 });
+
+const defaultTableOpen =
+  markdown.renderer.rules.table_open ??
+  ((tokens, index, options, _environment, renderer) => renderer.renderToken(tokens, index, options));
+const defaultTableClose =
+  markdown.renderer.rules.table_close ??
+  ((tokens, index, options, _environment, renderer) => renderer.renderToken(tokens, index, options));
+
+markdown.renderer.rules.table_open = (tokens, index, options, _environment, renderer): string =>
+  `<div class="r2md-table-scroll">${defaultTableOpen(tokens, index, options, _environment, renderer)}`;
+markdown.renderer.rules.table_close = (tokens, index, options, _environment, renderer): string =>
+  `${defaultTableClose(tokens, index, options, _environment, renderer)}</div>`;
+
+markdown.use(katexPlugin);
 
 function escapeHtml(value: string): string {
   return value

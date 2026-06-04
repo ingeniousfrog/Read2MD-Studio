@@ -67,16 +67,32 @@ export const themes: ThemeDefinition[] = [
 .r2md-article li {
   margin: 8px 0;
 }
+.r2md-article .r2md-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  margin: 22px 0;
+}
 .r2md-article table {
   width: 100%;
-  margin: 22px 0;
+  min-width: 560px;
+  margin: 0;
   border-collapse: collapse;
   font-size: 14px;
+}
+.r2md-article thead,
+.r2md-article tbody {
+  width: 100%;
+}
+.r2md-article tr {
+  border: 1px solid #dce3eb;
 }
 .r2md-article th,
 .r2md-article td {
   padding: 10px 12px;
   border: 1px solid #dce3eb;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
 }
 .r2md-article th {
   background: #eef3f7;
@@ -161,16 +177,32 @@ export const themes: ThemeDefinition[] = [
   background: #eef9fb;
   border: 1px solid #c5ebf2;
 }
+.r2md-article .r2md-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  margin: 22px 0;
+}
 .r2md-article table {
   width: 100%;
-  margin: 22px 0;
+  min-width: 560px;
+  margin: 0;
   border-collapse: collapse;
   font-size: 14px;
+}
+.r2md-article thead,
+.r2md-article tbody {
+  width: 100%;
+}
+.r2md-article tr {
+  border: 1px solid #d5e4ea;
 }
 .r2md-article th,
 .r2md-article td {
   padding: 11px 12px;
-  border-bottom: 1px solid #d5e4ea;
+  border: 1px solid #d5e4ea;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
 }
 .r2md-article th {
   color: #0f4c5c;
@@ -263,16 +295,32 @@ export const themes: ThemeDefinition[] = [
   background: #fbf6ef;
   border-left: 5px solid #c49a72;
 }
+.r2md-article .r2md-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  margin: 22px 0;
+}
 .r2md-article table {
   width: 100%;
-  margin: 22px 0;
+  min-width: 560px;
+  margin: 0;
   border-collapse: collapse;
   font-size: 14px;
+}
+.r2md-article thead,
+.r2md-article tbody {
+  width: 100%;
+}
+.r2md-article tr {
+  border: 1px solid #ead8c4;
 }
 .r2md-article th,
 .r2md-article td {
   padding: 10px 12px;
   border: 1px solid #ead8c4;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
 }
 .r2md-article th {
   color: #5d3f25;
