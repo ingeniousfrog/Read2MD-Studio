@@ -1,5 +1,7 @@
 # Read2MD Studio
 
+**语言 / Languages：** 中文 | [English](README-EN.md)
+
 轻量级 Markdown 发布工作台：写作、实时预览、主题排版，并一键复制适合公众号等富文本平台的 HTML。
 
 [![Release](https://img.shields.io/github/v/release/ingeniousfrog/Read2MD-Studio)](https://github.com/ingeniousfrog/Read2MD-Studio/releases)
