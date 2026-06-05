@@ -1,10 +1,10 @@
-import katex from "katex";
 import type MarkdownIt from "markdown-it";
 import type StateBlock from "markdown-it/lib/rules_block/state_block.mjs";
 import type StateInline from "markdown-it/lib/rules_inline/state_inline.mjs";
 import type Token from "markdown-it/lib/token.mjs";
+import { texToSvg } from "./mathToSvg";
 
-export function katexPlugin(markdown: MarkdownIt): void {
+export function mathPlugin(markdown: MarkdownIt): void {
   markdown.inline.ruler.before("escape", "r2md_math_inline", mathInlineRule);
   markdown.block.ruler.before("fence", "r2md_math_block", mathBlockRule, {
     alt: ["paragraph", "reference", "blockquote", "list"],
@@ -32,7 +32,7 @@ function mathInlineRule(state: StateInline, silent: boolean): boolean {
 
   if (!silent) {
     const token = state.push("r2md_math_inline", "math", 0);
-    token.content = normalizeMathSyntax(content);
+    token.content = content;
     token.markup = "$";
   }
 
@@ -93,28 +93,32 @@ function mathBlockRule(state: StateBlock, startLine: number, endLine: number, si
 function pushBlockToken(state: StateBlock, startLine: number, nextLine: number, content: string): void {
   const token = state.push("r2md_math_block", "math", 0);
   token.block = true;
-  token.content = normalizeMathSyntax(content.trim());
+  token.content = content.trim();
   token.markup = "$$";
   token.map = [startLine, nextLine];
   state.line = nextLine;
 }
 
 function renderInlineMath(tokens: Token[], index: number): string {
-  return renderKatex(tokens[index].content, false);
+  return renderMath(tokens[index].content, false);
 }
 
 function renderBlockMath(tokens: Token[], index: number): string {
-  return `${renderKatex(tokens[index].content, true)}\n`;
+  const svg = renderMath(tokens[index].content, true);
+
+  return `<section class="r2md-formula-block" style="margin:18px 0;text-align:center;overflow-x:auto;">${svg}</section>\n`;
 }
 
-function renderKatex(content: string, displayMode: boolean): string {
-  return katex.renderToString(content, {
-    displayMode,
-    output: "html",
-    throwOnError: false,
-    strict: "ignore",
-    trust: false,
-  });
+function renderMath(content: string, displayMode: boolean): string {
+  try {
+    return texToSvg(content, { displayMode });
+  } catch {
+    const escaped = escapeHtml(content);
+
+    return displayMode
+      ? `<section style="margin:18px 0;text-align:center;color:#a33934;">$$ ${escaped} $$</section>`
+      : `<code style="color:#a33934;">$ ${escaped} $</code>`;
+  }
 }
 
 function findClosingInlineDelimiter(source: string, start: number): number {
@@ -137,6 +141,10 @@ function findClosingInlineDelimiter(source: string, start: number): number {
   return -1;
 }
 
-function normalizeMathSyntax(mathText: string): string {
-  return mathText.replace(/\\operatorname\{([^{}]+)\}/g, "\\mathrm{$1}");
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

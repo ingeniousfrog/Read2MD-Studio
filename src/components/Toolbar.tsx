@@ -76,15 +76,19 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
           {copyStatus === "copying" ? "Copying..." : "Copy for WeChat"}
         </button>
       </div>
-      <div className={`status-line status-${copyStatus}`} role="status">
-        {statusMessage}
-      </div>
-      {warnings.length > 0 && (
-        <div className="warning-line">
-          {warnings.map((warning) => (
-            <span key={warning}>{warning}</span>
-          ))}
-        </div>
+      {!copyDialog && (
+        <>
+          <div className={`status-line status-${copyStatus}`} role="status">
+            {statusMessage}
+          </div>
+          {warnings.length > 0 && (
+            <div className="warning-line">
+              {warnings.map((warning) => (
+                <span key={warning}>{warning}</span>
+              ))}
+            </div>
+          )}
+        </>
       )}
       {copyDialog && (
         <div className="copy-dialog-backdrop" role="presentation">

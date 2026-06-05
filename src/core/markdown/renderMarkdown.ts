@@ -1,6 +1,6 @@
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
-import { katexPlugin } from "./katexPlugin";
+import { mathPlugin } from "./mathPlugin";
 
 export interface RenderMarkdownInput {
   markdown: string;
@@ -51,7 +51,7 @@ markdown.renderer.rules.table_open = (tokens, index, options, _environment, rend
 markdown.renderer.rules.table_close = (tokens, index, options, _environment, renderer): string =>
   `${defaultTableClose(tokens, index, options, _environment, renderer)}</div>`;
 
-markdown.use(katexPlugin);
+markdown.use(mathPlugin);
 
 function escapeHtml(value: string): string {
   return value
