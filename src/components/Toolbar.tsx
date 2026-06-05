@@ -11,6 +11,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ markdownValue }: ToolbarProps) {
+  const activeDocId = useEditorStore((state) => state.activeDocId);
   const themeId = useEditorStore((state) => state.themeId);
   const customThemeTokens = useEditorStore((state) => state.customThemeTokens);
   const customThemeName = useEditorStore((state) => state.customThemeName);
@@ -38,6 +39,7 @@ export function Toolbar({ markdownValue }: ToolbarProps) {
         rawHtml: rendered.rawHtml,
         theme: getActiveTheme(themeId, customThemeTokens, customThemeName),
         warnings: rendered.warnings,
+        docId: activeDocId,
       });
       const result = await copyHtml(output);
       const hasWarnings = output.warnings.length > 0;

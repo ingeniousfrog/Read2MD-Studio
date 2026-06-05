@@ -1435,6 +1435,26 @@ body.is-resizing {
   box-shadow: var(--r2md-shadow);
 }
 
+.r2md-article .r2md-wechat-stats {
+  margin: 12px 0 18px;
+}
+
+.r2md-article .r2md-wechat-stats p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.r2md-article .r2md-wechat-heading h2,
+.r2md-article .r2md-wechat-heading h3,
+.r2md-article .r2md-wechat-heading h4 {
+  margin-top: 0;
+}
+
+.r2md-article .r2md-wechat-callout blockquote {
+  margin: 0;
+}
+
 @media (max-width: 900px) {
   .toolbar {
     grid-template-columns: 1fr;

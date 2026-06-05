@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DocumentList } from "./components/DocumentList";
 import { EditorPane } from "./components/EditorPane";
 import { PreviewPane } from "./components/PreviewPane";
 import { Toolbar } from "./components/Toolbar";
 import { WorkspaceSplit } from "./components/WorkspaceSplit";
+import { resolveMarkdownAssetUrls } from "./core/assets/resolveAssets";
 import { renderMarkdown } from "./core/markdown/renderMarkdown";
 import { getActiveTheme } from "./core/theme/themes";
 import { useEditorStore } from "./store/editorStore";
@@ -21,14 +22,30 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
 
   const markdown = useEditorStore((state) => state.markdown);
+  const activeDocId = useEditorStore((state) => state.activeDocId);
   const themeId = useEditorStore((state) => state.themeId);
   const customThemeTokens = useEditorStore((state) => state.customThemeTokens);
   const customThemeName = useEditorStore((state) => state.customThemeName);
   const setMarkdown = useEditorStore((state) => state.setMarkdown);
   const setThemeId = useEditorStore((state) => state.setThemeId);
 
+  const [previewMarkdown, setPreviewMarkdown] = useState(markdown);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const resolved = await resolveMarkdownAssetUrls(activeDocId, markdown);
+      if (!cancelled) {
+        setPreviewMarkdown(resolved);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeDocId, markdown]);
+
   const rendered = renderMarkdown({
-    markdown,
+    markdown: previewMarkdown,
   });
   const activeTheme = getActiveTheme(themeId, customThemeTokens, customThemeName);
 

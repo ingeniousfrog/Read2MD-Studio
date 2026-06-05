@@ -5,6 +5,8 @@ export interface PlatformAdapterInput {
   rawHtml: string;
   theme: ThemeDefinition;
   warnings?: string[];
+  /** When set, localized r2md-asset images are inlined as data URLs for paste. */
+  docId?: string | null;
 }
 
 export interface PlatformOutput {

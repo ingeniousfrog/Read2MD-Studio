@@ -1,5 +1,6 @@
 import DOMPurify from "dompurify";
 import juice from "juice";
+import { inlineR2mdAssetImages } from "../assets/inlineAssets";
 import { applyThemeHtml } from "../theme/applyTheme";
 import { injectH2Numbering, stripH2PseudoCss, themeUsesH2Numbering } from "../theme/h2Numbering";
 import { extractPlainTextFromHtml, type PlatformAdapterInput, type PlatformOutput } from "./commonAdapter";
@@ -53,7 +54,8 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
     ADD_ATTR: ["style", "target"],
   });
 
-  const imageResult = await inlineExternalImages(sanitizedHtml);
+  const localizedHtml = await inlineR2mdAssetImages(sanitizedHtml, input.docId ?? null);
+  const imageResult = await inlineExternalImages(localizedHtml);
   if (imageResult.failedCount > 0) {
     warnings.push(imageFetchFailureWarning);
     imageResult.failedSources.slice(0, 3).forEach((source) => {

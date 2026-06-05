@@ -11,6 +11,53 @@
         { "url": "https://**" },
         { "url": "http://**" }
       ]
+    },
+    {
+      "identifier": "fs:allow-app-read-recursive",
+      "allow": [
+        { "path": "$APPDATA/read2md-studio" },
+        { "path": "$APPDATA/read2md-studio/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-app-write-recursive",
+      "allow": [
+        { "path": "$APPDATA/read2md-studio" },
+        { "path": "$APPDATA/read2md-studio/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-app-meta-recursive",
+      "allow": [
+        { "path": "$APPDATA/read2md-studio" },
+        { "path": "$APPDATA/read2md-studio/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        { "path": "$APPDATA/read2md-studio" },
+        { "path": "$APPDATA/read2md-studio/**" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$APPDATA/read2md-studio/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "$APPDATA/read2md-studio/**" }]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [{ "path": "$APPDATA/read2md-studio/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        { "path": "$APPDATA/read2md-studio" },
+        { "path": "$APPDATA/read2md-studio/**" }
+      ]
     }
   ]
 }

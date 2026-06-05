@@ -60,6 +60,49 @@ function importProxyPlugin(): Plugin {
         }
       });
 
+      server.middlewares.use("/api/wechat-image", async (request, response, next) => {
+        if (request.method !== "GET") {
+          next();
+          return;
+        }
+
+        try {
+          // @ts-expect-error Local ESM helper ships without generated declaration file.
+          const { fetchWechatImage } = (await import("./server/wechatImage.mjs")) as {
+            fetchWechatImage: (url: string) => Promise<{
+              ok: boolean;
+              status: number;
+              contentType: string | null;
+              bytes: Buffer | null;
+            }>;
+          };
+          const requestUrl = new URL(request.url ?? "", "http://localhost");
+          const imageUrl = requestUrl.searchParams.get("url");
+
+          if (!imageUrl) {
+            response.statusCode = 400;
+            response.end("Missing url parameter");
+            return;
+          }
+
+          const result = await fetchWechatImage(imageUrl);
+          if (!result.ok || !result.bytes) {
+            response.statusCode = result.status || 502;
+            response.end("Image fetch failed");
+            return;
+          }
+
+          response.statusCode = 200;
+          if (result.contentType) {
+            response.setHeader("Content-Type", result.contentType);
+          }
+          response.end(result.bytes);
+        } catch (error) {
+          response.statusCode = 500;
+          response.end(error instanceof Error ? error.message : "Image proxy error");
+        }
+      });
+
       server.middlewares.use("/api/import-wechat", async (request, response, next) => {
         if (request.method !== "GET") {
           next();

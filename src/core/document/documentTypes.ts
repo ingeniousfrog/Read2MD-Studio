@@ -13,6 +13,8 @@ export interface StudioDocument {
   customThemeName: string;
   source: DocumentSource;
   sourceUrl?: string;
+  /** Filenames under assets/{docId}/ for localized images */
+  assetFiles?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +56,7 @@ export function createImportedDocument(input: {
   themeName: string;
   source: Exclude<DocumentSource, "blank">;
   sourceUrl?: string;
+  assetFiles?: string[];
 }): StudioDocument {
   const now = new Date().toISOString();
   return {
@@ -65,6 +68,7 @@ export function createImportedDocument(input: {
     customThemeName: input.themeName,
     source: input.source,
     sourceUrl: input.sourceUrl,
+    assetFiles: input.assetFiles,
     createdAt: now,
     updatedAt: now,
   };

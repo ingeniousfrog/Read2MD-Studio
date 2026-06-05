@@ -6,6 +6,13 @@ import {
   type SavedTheme,
   type StudioDocument,
 } from "../core/document/documentTypes";
+import { deleteDocumentAssetsDir } from "../core/assets/assetStorage";
+import {
+  isRemoteHttpImage,
+  isWechatHostedImage,
+  listMarkdownImageUrls,
+} from "../core/assets/imageUrl";
+import { localizeDocumentImages } from "../core/assets/localizeImages";
 import { runUnifiedUrlImport } from "../core/import/runImport";
 import type { ImportedArticle } from "../core/import/importTypes";
 import {
@@ -72,6 +79,8 @@ interface EditorState {
   renameDocument: (id: string, title: string) => void;
   removeDocument: (id: string) => void;
   importUrlToNewDoc: (url: string) => Promise<{ ok: true } | { ok: false; message: string; verification?: boolean }>;
+  relocalizeDocumentImagesIfNeeded: (id: string) => Promise<void>;
+  registerAssetFile: (filename: string) => void;
   saveCurrentThemeAsPreset: (name: string) => void;
   applySavedTheme: (id: string) => void;
   removeSavedTheme: (id: string) => void;
@@ -376,6 +385,40 @@ function documentToMirror(doc: StudioDocument): Pick<
   };
 }
 
+const relocalizeInFlight = new Set<string>();
+
+function documentHasRemoteWechatImages(markdown: string): boolean {
+  return listMarkdownImageUrls(markdown).some(
+    (entry) => isRemoteHttpImage(entry.url) && isWechatHostedImage(entry.url),
+  );
+}
+
+async function relocalizeDocument(doc: StudioDocument): Promise<StudioDocument | null> {
+  if (!documentHasRemoteWechatImages(doc.markdown)) {
+    return null;
+  }
+  if (relocalizeInFlight.has(doc.id)) {
+    return null;
+  }
+
+  relocalizeInFlight.add(doc.id);
+  try {
+    const localized = await localizeDocumentImages(doc.id, doc.markdown);
+    if (localized.assetFiles.length === 0) {
+      return null;
+    }
+
+    return {
+      ...doc,
+      markdown: localized.markdown,
+      assetFiles: localized.assetFiles,
+      updatedAt: new Date().toISOString(),
+    };
+  } finally {
+    relocalizeInFlight.delete(doc.id);
+  }
+}
+
 function updateActiveDocument(
   get: () => EditorState,
   patch: Partial<StudioDocument>,
@@ -538,6 +581,62 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       ...documentToMirror(doc),
       statusMessage: `已切换到：${doc.title}`,
     });
+    void get().relocalizeDocumentImagesIfNeeded(id);
+  },
+
+  registerAssetFile: (filename) => {
+    const state = get();
+    if (!state.activeDocId) {
+      return;
+    }
+
+    const documents = state.documents.map((doc) => {
+      if (doc.id !== state.activeDocId) {
+        return doc;
+      }
+      const assetFiles = doc.assetFiles ?? [];
+      if (assetFiles.includes(filename)) {
+        return doc;
+      }
+      return {
+        ...doc,
+        assetFiles: [...assetFiles, filename],
+        updatedAt: new Date().toISOString(),
+      };
+    });
+
+    persistDocuments(documents);
+    set({
+      documents,
+      statusMessage: `已插入图片：${filename}`,
+    });
+  },
+
+  relocalizeDocumentImagesIfNeeded: async (id) => {
+    const doc = get().documents.find((entry) => entry.id === id);
+    if (!doc) {
+      return;
+    }
+
+    const updated = await relocalizeDocument(doc);
+    if (!updated) {
+      return;
+    }
+
+    const documents = get().documents.map((entry) => (entry.id === updated.id ? updated : entry));
+    persistDocuments(documents);
+
+    if (get().activeDocId === updated.id) {
+      syncLegacyStorage(updated);
+      set({
+        documents,
+        ...documentToMirror(updated),
+        statusMessage: `已本地化 ${updated.assetFiles?.length ?? 0} 张图片：${updated.title}`,
+      });
+      return;
+    }
+
+    set({ documents });
   },
 
   renameDocument: (id, title) => {
@@ -563,6 +662,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return;
     }
 
+    void deleteDocumentAssetsDir(id);
     const documents = state.documents.filter((doc) => doc.id !== id);
     persistDocuments(documents);
 
@@ -591,7 +691,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }
 
-    const doc = createImportedDocument({
+    const draft = createImportedDocument({
       title: imported.result.meta.title,
       markdown: imported.result.markdown,
       tokens: imported.result.tokens,
@@ -600,15 +700,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       sourceUrl: url,
     });
 
+    const localized = await localizeDocumentImages(draft.id, draft.markdown);
+    const doc = {
+      ...draft,
+      markdown: localized.markdown,
+      assetFiles: localized.assetFiles,
+    };
+
     const documents = [doc, ...get().documents];
     persistDocuments(documents);
     syncLegacyStorage(doc);
+
+    const warningSuffix =
+      localized.warnings.length > 0 ? `（${localized.warnings.join(" ")}）` : "";
 
     set({
       documents,
       activeDocId: doc.id,
       ...documentToMirror(doc),
-      statusMessage: `已导入：${doc.title}`,
+      statusMessage: `已导入：${doc.title}${warningSuffix}`,
+      warnings: localized.warnings,
     });
 
     return { ok: true };
@@ -663,3 +774,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ savedThemes, statusMessage: "已删除保存的主题" });
   },
 }));
+
+if (initialActiveDoc && documentHasRemoteWechatImages(initialActiveDoc.markdown)) {
+  queueMicrotask(() => {
+    void useEditorStore.getState().relocalizeDocumentImagesIfNeeded(initialActiveDoc.id);
+  });
+}
