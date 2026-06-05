@@ -1,20 +1,29 @@
 :root {
-  --r2md-bg: #f1f5f9;
+  --r2md-bg: #f4f6fb;
+  --r2md-bg-glow-purple: rgba(148, 168, 220, 0.32);
+  --r2md-bg-glow-warm: rgba(228, 212, 168, 0.1);
   --r2md-surface: #ffffff;
-  --r2md-surface-muted: #f8fafc;
-  --r2md-border: #e2e8f0;
-  --r2md-border-strong: #cbd5e1;
-  --r2md-text: #0f172a;
-  --r2md-text-muted: #64748b;
-  --r2md-accent: #0f766e;
-  --r2md-accent-hover: #0d9488;
-  --r2md-accent-soft: #ccfbf1;
+  --r2md-surface-muted: #eef1f8;
+  --r2md-border: rgba(58, 68, 98, 0.1);
+  --r2md-border-strong: rgba(58, 68, 98, 0.18);
+  --r2md-text: #242836;
+  --r2md-text-muted: #646b7e;
+  --r2md-accent: #7d92c8;
+  --r2md-accent-hover: #6b80b8;
+  --r2md-accent-soft: rgba(125, 146, 200, 0.18);
+  --r2md-accent-warm: #dcc88a;
+  --r2md-accent-gradient-from: #a8b8e8;
+  --r2md-accent-gradient-to: #dce8b8;
+  --r2md-brand-on-gradient: #ffffff;
   --r2md-danger: #dc2626;
-  --r2md-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --r2md-shadow: 0 18px 50px rgba(36, 40, 54, 0.08);
   --r2md-radius: 10px;
   --r2md-radius-sm: 8px;
   color: var(--r2md-text);
-  background: var(--r2md-bg);
+  background:
+    radial-gradient(ellipse 72% 48% at 10% -8%, var(--r2md-bg-glow-purple), transparent),
+    radial-gradient(ellipse 42% 34% at 90% 2%, var(--r2md-bg-glow-warm), transparent),
+    var(--r2md-bg);
   font-family:
     "PingFang SC",
     "Hiragino Sans GB",
@@ -67,18 +76,53 @@ select {
   gap: 12px;
 }
 
-.brand-logo {
+.brand-logo-wrap {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+  color: var(--r2md-brand-on-gradient);
+  background: linear-gradient(
+    135deg,
+    var(--r2md-accent-gradient-from) 0%,
+    var(--r2md-accent-gradient-to) 100%
+  );
+  box-shadow: 0 4px 14px rgba(125, 146, 200, 0.28);
+}
+
+.brand-logo-mark {
+  width: 22px;
+  height: 22px;
+}
+
+.brand-wordmark {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.brand-wordmark-read,
+.brand-wordmark-md {
+  color: var(--r2md-accent);
+}
+
+.brand-wordmark-two {
+  color: var(--r2md-accent-warm);
+}
+
+.brand-wordmark-studio {
+  color: var(--r2md-text-muted);
+  font-weight: 600;
 }
 
 .eyebrow {
   margin: 0 0 2px;
-  color: var(--r2md-accent);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .toolbar h1 {
@@ -133,7 +177,7 @@ select {
 .copy-button:hover:not(:disabled) {
   transform: translateY(-1px);
   background: var(--r2md-accent-hover);
-  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.25);
+  box-shadow: 0 8px 18px rgba(125, 146, 200, 0.28);
 }
 
 .copy-button:disabled {

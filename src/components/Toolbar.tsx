@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BrandLogo, BrandWordmark } from "./BrandLogo";
 import { copyHtml } from "../core/copy/copyHtml";
 import { buildWechatOutput } from "../core/platform/wechatAdapter";
 import { renderMarkdown } from "../core/markdown/renderMarkdown";
@@ -68,9 +69,13 @@ export function Toolbar({ markdownValue }: ToolbarProps) {
   return (
     <header className="toolbar">
       <div className="brand-block">
-        <img className="brand-logo" src="./favicon.svg" alt="" width={36} height={36} />
+        <div className="brand-logo-wrap" aria-hidden>
+          <BrandLogo />
+        </div>
         <div>
-          <p className="eyebrow">Read2MD Studio</p>
+          <p className="eyebrow">
+            <BrandWordmark />
+          </p>
           <h1>Markdown 发布工作台</h1>
         </div>
       </div>

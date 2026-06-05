@@ -202,13 +202,13 @@ export function getHeadingLevel(
 }
 
 const baseCustomSeed: Partial<ThemeTokenInput> = {
-  primaryColor: "#0f766e",
-  textColor: "#1e293b",
-  mutedColor: "#64748b",
+  primaryColor: "#7d92c8",
+  textColor: "#242836",
+  mutedColor: "#646b7e",
   backgroundColor: "#ffffff",
-  headingColor: "#0f172a",
-  linkColor: "#0f766e",
-  borderColor: "#e2e8f0",
+  headingColor: "#242836",
+  linkColor: "#7d92c8",
+  borderColor: "#e4e8f2",
   codeBackground: "#f1f5f9",
   blockquoteBackground: "#f8fafc",
   fontFamily:

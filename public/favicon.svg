@@ -1,22 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#14b8a6"/>
-      <stop offset="1" stop-color="#0f766e"/>
+    <linearGradient id="brand" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A8B8E8"/>
+      <stop offset="1" stop-color="#DCE8B8"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="108" fill="url(#g)"/>
-  <path
-    d="M152 168h208M152 248h176M152 328h208"
-    stroke="#f8fafc"
-    stroke-width="36"
-    stroke-linecap="round"
-  />
-  <path
-    d="M336 296l40 40 72-88"
-    stroke="#ccfbf1"
-    stroke-width="28"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+  <rect width="32" height="32" rx="8" fill="url(#brand)"/>
+  <rect x="5" y="7" width="11" height="18" rx="2.5" stroke="#FFFFFF" stroke-width="2"/>
+  <path d="M8.5 12h4M8.5 16h4M8.5 20h2.5" stroke="#FFFFFF" stroke-width="1.75" stroke-linecap="round"/>
+  <path d="M17 16h3.5l2-2.25M20.5 16 17 18.25" stroke="#FFFFFF" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M23.5 12.5v7M26.5 12.5v7M23.5 16h3" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
 </svg>
