@@ -36,13 +36,15 @@ You can also **right-click Read2MD-Studio → Open** in Applications (confirm on
 
 ## Features
 
-- **Editor**: CodeMirror 6 with Markdown syntax highlighting
+- **Editor**: CodeMirror 6 with Markdown syntax highlighting; **paste / drag-and-drop images** into local assets
 - **Preview**: `markdown-it` rendering, MathJax SVG math, highlight.js code blocks
 - **Themes**: Built-in `clean` / `tech` / `wechat-card`, custom tokens, JSON import/export, dynamic heading levels (H1–H6 add/remove)
 - **Document library**: Multi-document management; drafts and theme settings auto-saved to `localStorage`
-- **URL import**: WeChat articles / generic pages → Markdown (with math and code block preservation)
-- **WeChat copy**: CSS inlining, HTML sanitization, math SVG protection, external images inlined when possible
-- **Desktop**: Tauri native window; URL import via HTTP plugin without browser CORS limits
+- **URL import**: WeChat articles / generic pages → Markdown (math and code blocks preserved; WeChat HTML keeps tables, blockquotes, styled headings when possible)
+- **Image localization**: External images downloaded to `assets/{docId}/` on import; Markdown uses `r2md-asset:` URLs; preview resolves them and assets are removed when a document is deleted
+- **WeChat copy**: CSS inlining, HTML sanitization, math SVG protection, external images inlined as data URLs when possible
+- **Desktop**: Tauri native window; URL import via HTTP plugin without browser CORS; local images previewed via the asset protocol
+- **Layout**: Toolbar, document sidebar, and pane headers stay fixed; only editor and preview content scroll
 
 ---
 
@@ -69,6 +71,7 @@ flowchart TB
     PL["platform/<br/>wechatAdapter · commonAdapter"]
     CP["copy/<br/>copyHtml"]
     IM["import/<br/>fetch · parse · htmlToMarkdown"]
+    AS["assets/<br/>localize · resolve · save"]
   end
 
   subgraph Runtime["Runtime"]
@@ -81,8 +84,11 @@ flowchart TB
   PP --> MD --> TH
   TB --> PL --> CP
   DL --> IM
+  IM --> AS
   IM --> WEB
   IM --> TAU
+  EP --> AS
+  PP --> AS
 ```
 
 ### Directory layout
@@ -92,7 +98,8 @@ src/
   App.tsx                 # Layout: toolbar + doc sidebar + editor/preview split
   components/             # Pure UI; no business rules
     DocumentList.tsx      # Doc list, URL import, rename/delete menu
-    EditorPane.tsx        # Markdown editor
+    EditorPane.tsx        # Markdown editor (paste/drag images)
+    editorImageExtension.ts
     PreviewPane.tsx       # Preview + theme picker/config entry
     ThemePanel.tsx        # Categorized theme config panel
     HeadingLevelsEditor.tsx
@@ -104,6 +111,7 @@ src/
     platform/             # Platform adapters (currently WeChat)
     copy/                 # Clipboard write
     import/               # URL fetch, HTML parse, to Markdown
+    assets/               # Image download, localization, preview resolve, paste save
     document/             # Document type definitions
   store/
     editorStore.ts        # Zustand global state + localStorage persistence
@@ -157,7 +165,21 @@ User enters URL
   → parseWechatHtml() / parseGenericHtml()
       Extract code blocks, math placeholders
   → htmlToMarkdown()        # Sitdown + Turndown
+  → localizeDocumentImages() # Download external images to assets/{docId}/
   → Write to editor
+```
+
+### 4. Image assets
+
+```text
+Import external images / editor paste·drop
+  → localizeDocumentImages() / saveUserImage()
+      Desktop: AppData/read2md-studio/assets/{docId}/
+      Web dev: IndexedDB
+  → Markdown references r2md-asset:image-001.webp
+  → Preview resolveMarkdownAssetUrls() → convertFileSrc (desktop asset protocol)
+  → Copy inlineAssets() tries data URL conversion
+  → Delete document → deleteDocumentAssetsDir()
 ```
 
 ---
@@ -173,13 +195,13 @@ npm run dev -- --host 127.0.0.1 --port 3000
 
 Open http://127.0.0.1:3000/
 
-1. Write or paste Markdown in the left editor
+1. Write or paste Markdown in the left editor (**paste / drag images** supported)
 2. See live preview on the right
 3. Pick a theme at the top of the preview; use “Theme config” to fine-tune
 4. Click **“Copy to WeChat”** in the toolbar
 5. Paste into the WeChat backend or another rich-text editor
 
-**URL import:** Document sidebar → Import → paste article URL. In dev mode, a local proxy fetches the page; for production Web deploy you need an equivalent API or use the desktop app.
+**URL import:** Document sidebar → Import → paste article URL. In dev mode, a local proxy fetches the page; for production Web deploy you need an equivalent API or use the desktop app. For image-heavy articles, prefer the **desktop app** so WeChat images are fully localized.
 
 ### Desktop (macOS)
 
@@ -248,8 +270,9 @@ Third-party packages have their own licenses; keep the `LICENSE` file when redis
 
 ## Current limitations
 
-- No image upload / CDN; external images rely on inlining or manual upload
+- **No image CDN yet**: Desktop and Web dev can store images as local `assets` (download on import, paste to insert), but some external images may still fail to inline when copying to WeChat due to CORS—manual upload in the backend may be needed
+- **Production Web deploy** has no URL fetch proxy or full image localization; use the desktop app for image-heavy workflows
 - Only WeChat copy adapter implemented; Zhihu / Juejin etc. planned
-- No cloud sync or user accounts
-- Desktop dmg is unsigned and not notarized
+- No cloud sync or user accounts; drafts and images stay on the local machine
+- Desktop dmg is ad-hoc signed and not notarized
 - Some WeChat article imports may trigger environment verification depending on network

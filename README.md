@@ -36,13 +36,15 @@ xattr -cr /Applications/Read2MD-Studio.app
 
 ## 功能概览
 
-- **编辑器**：CodeMirror 6 + Markdown 语法高亮
+- **编辑器**：CodeMirror 6 + Markdown 语法高亮；支持 **粘贴 / 拖放图片** 插入本地资源
 - **预览**：`markdown-it` 渲染，MathJax SVG 公式，highlight.js 代码高亮
 - **主题**：内置 `clean` / `tech` / `wechat-card`，支持自定义 token、JSON 导入导出、动态标题级别（H1–H6 可增删）
 - **文档库**：多文档管理，草稿与主题配置自动保存至 `localStorage`
-- **URL 导入**：公众号文章 / 通用网页 → Markdown（含公式、代码块保护）
-- **公众号复制**：CSS 内联、HTML 消毒、公式 SVG 保护、外链图片尝试内嵌
-- **桌面端**：Tauri 原生窗口，URL 导入走 HTTP 插件，无浏览器 CORS 限制
+- **URL 导入**：公众号文章 / 通用网页 → Markdown（含公式、代码块保护；公众号 HTML 尽量保留表格、引用块、彩色标题等样式）
+- **图片本地化**：导入时自动下载外链图至每篇文档的 `assets/{docId}/`；Markdown 使用 `r2md-asset:` 引用，预览与删除文档时自动解析 / 清理
+- **公众号复制**：CSS 内联、HTML 消毒、公式 SVG 保护、外链图片尝试内嵌为 data URL
+- **桌面端**：Tauri 原生窗口，URL 导入走 HTTP 插件，无浏览器 CORS 限制；本地图片通过 asset 协议预览
+- **布局**：顶部工具栏、左侧文档边栏与各面板标题栏固定，仅编辑区 / 预览正文滚动
 
 ---
 
@@ -69,6 +71,7 @@ flowchart TB
     PL["platform/<br/>wechatAdapter · commonAdapter"]
     CP["copy/<br/>copyHtml"]
     IM["import/<br/>fetch · parse · htmlToMarkdown"]
+    AS["assets/<br/>localize · resolve · save"]
   end
 
   subgraph Runtime["运行时"]
@@ -81,8 +84,11 @@ flowchart TB
   PP --> MD --> TH
   TB --> PL --> CP
   DL --> IM
+  IM --> AS
   IM --> WEB
   IM --> TAU
+  EP --> AS
+  PP --> AS
 ```
 
 ### 目录结构
@@ -92,7 +98,8 @@ src/
   App.tsx                 # 布局：工具栏 + 文档侧栏 + 编辑/预览分栏
   components/             # 纯 UI 组件，不含业务规则
     DocumentList.tsx      # 文档列表、URL 导入入口、重命名/删除菜单
-    EditorPane.tsx        # Markdown 编辑器
+    EditorPane.tsx        # Markdown 编辑器（含图片粘贴/拖放）
+    editorImageExtension.ts
     PreviewPane.tsx       # 预览区 + 主题选择/配置入口
     ThemePanel.tsx        # 分类主题配置面板
     HeadingLevelsEditor.tsx
@@ -104,6 +111,7 @@ src/
     platform/             # 平台适配（当前：微信公众号）
     copy/                 # 剪贴板写入
     import/               # URL 抓取、HTML 解析、转 Markdown
+    assets/               # 图片下载、本地化、预览解析、用户粘贴保存
     document/             # 文档类型定义
   store/
     editorStore.ts        # Zustand 全局状态 + localStorage 持久化
@@ -157,7 +165,21 @@ rawHtml
   → parseWechatHtml() / parseGenericHtml()
       提取代码块、公式占位符
   → htmlToMarkdown()        # Sitdown + Turndown
+  → localizeDocumentImages() # 外链图下载至 assets/{docId}/
   → 写入编辑器
+```
+
+### 4. 图片资源
+
+```text
+导入外链图 / 编辑器粘贴·拖放
+  → localizeDocumentImages() / saveUserImage()
+      桌面端：AppData/read2md-studio/assets/{docId}/
+      Web 开发态：IndexedDB
+  → Markdown 引用 r2md-asset:image-001.webp
+  → 预览 resolveMarkdownAssetUrls() → convertFileSrc（桌面 asset 协议）
+  → 复制时 inlineAssets() 尝试转为 data URL
+  → 删除文档 → deleteDocumentAssetsDir()
 ```
 
 ---
@@ -173,13 +195,13 @@ npm run dev -- --host 127.0.0.1 --port 3000
 
 打开 http://127.0.0.1:3000/
 
-1. 在左侧编辑器撰写或粘贴 Markdown
+1. 在左侧编辑器撰写或粘贴 Markdown（可直接 **粘贴 / 拖放图片**）
 2. 右侧查看实时预览
 3. 在预览区顶部选择主题，点击「主题配置」微调样式
 4. 点击工具栏 **「复制到公众号」**
 5. 粘贴到公众号后台或其他富文本编辑器
 
-**URL 导入：** 文档侧栏 → 导入 → 粘贴文章链接。开发模式下由本地代理抓取；生产 Web 部署需自行提供等效 API，或改用桌面版。
+**URL 导入：** 文档侧栏 → 导入 → 粘贴文章链接。开发模式下由本地代理抓取；生产 Web 部署需自行提供等效 API，或改用桌面版。含图文章建议使用 **桌面版** 导入，以完整本地化微信图片。
 
 ### 桌面版（macOS）
 
@@ -248,8 +270,9 @@ npm run preview  # 本地预览 dist
 
 ## 当前限制
 
-- 暂无图片上传 / 图床，外链图片依赖内嵌或手动上传
+- **尚无图床 / CDN**：桌面版与 Web 开发态可将图片存为本地 `assets`（导入下载、粘贴插入），但复制到公众号时部分外链图仍可能因跨域无法内嵌，需在后台手动上传
+- **Web 生产部署**暂无 URL 抓取代理与完整图片本地化，含图工作流建议用桌面版
 - 仅实现微信公众号复制适配，知乎 / 掘金等平台待扩展
-- 无云同步与用户账号体系
-- 桌面 dmg 未签名、未公证
+- 无云同步与用户账号体系；图片与草稿仅存本机
+- 桌面 dmg 为 ad-hoc 签名、未公证
 - 部分公众号文章导入可能触发环境验证，与网络环境有关
