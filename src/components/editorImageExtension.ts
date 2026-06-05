@@ -1,3 +1,4 @@
+import { Prec } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { nextAssetImageIndex, saveUserImage } from "../core/assets/saveUserImage";
 
@@ -6,7 +7,20 @@ interface ImageExtensionOptions {
   markdown: string;
   assetFiles: string[];
   onImageInserted: (filename: string) => void;
+  onMarkdownChange: (markdown: string) => void;
   onError: (message: string) => void;
+}
+
+const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+
+function isImageFile(file: File, itemType = ""): boolean {
+  if (file.type.startsWith("image/")) {
+    return true;
+  }
+  if (itemType.startsWith("image/")) {
+    return true;
+  }
+  return IMAGE_EXT_RE.test(file.name);
 }
 
 function collectImageFiles(dataTransfer: DataTransfer | null): File[] {
@@ -20,7 +34,7 @@ function collectImageFiles(dataTransfer: DataTransfer | null): File[] {
       continue;
     }
     const file = item.getAsFile();
-    if (file && file.type.startsWith("image/")) {
+    if (file && isImageFile(file, item.type)) {
       files.push(file);
     }
   }
@@ -30,7 +44,7 @@ function collectImageFiles(dataTransfer: DataTransfer | null): File[] {
   }
 
   for (const file of Array.from(dataTransfer.files)) {
-    if (file.type.startsWith("image/")) {
+    if (isImageFile(file)) {
       files.push(file);
     }
   }
@@ -70,6 +84,7 @@ async function insertImages(
     changes: { from: pos, insert: insertion },
     selection: { anchor: pos + insertion.length },
   });
+  options.onMarkdownChange(view.state.doc.toString());
 
   for (const filename of filenames) {
     options.onImageInserted(filename);
@@ -77,7 +92,7 @@ async function insertImages(
 }
 
 export function editorImageExtension(options: ImageExtensionOptions) {
-  return EditorView.domEventHandlers({
+  return Prec.highest(EditorView.domEventHandlers({
     paste(event, view) {
       const files = collectImageFiles(event.clipboardData);
       if (files.length === 0) {
@@ -109,5 +124,5 @@ export function editorImageExtension(options: ImageExtensionOptions) {
       });
       return true;
     },
-  });
+  }));
 }

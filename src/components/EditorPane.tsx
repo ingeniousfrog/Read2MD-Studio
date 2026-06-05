@@ -30,10 +30,11 @@ export function EditorPane({ markdownValue, onMarkdownChange }: EditorPaneProps)
         markdown: markdownValue,
         assetFiles,
         onImageInserted: registerAssetFile,
+        onMarkdownChange: onMarkdownChange,
         onError: (message) => setCopyStatus("error", message),
       }),
     ],
-    [activeDocId, markdownValue, assetFiles, registerAssetFile, setCopyStatus],
+    [activeDocId, markdownValue, assetFiles, onMarkdownChange, registerAssetFile, setCopyStatus],
   );
 
   return (
