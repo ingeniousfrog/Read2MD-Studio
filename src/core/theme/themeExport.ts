@@ -1,5 +1,6 @@
 import {
   THEME_TOKEN_KEYS,
+  normalizeThemeTokens,
   type ThemeTokenInput,
 } from "./themeTokens";
 
@@ -74,7 +75,7 @@ export function parseImportedThemeJson(
 function validateTokens(
   tokens: Record<string, unknown>,
 ): { ok: true; tokens: ThemeTokenInput } | { ok: false; error: string } {
-  const stringKeys: (keyof ThemeTokenInput)[] = [
+  const legacyRequiredStrings = [
     "primaryColor",
     "textColor",
     "mutedColor",
@@ -86,37 +87,39 @@ function validateTokens(
     "blockquoteBackground",
     "fontFamily",
   ];
-
-  const numberKeys: (keyof ThemeTokenInput)[] = [
+  const legacyRequiredNumbers = [
     "headingFontWeight",
     "paragraphLineHeight",
     "paragraphSpacing",
     "radius",
   ];
 
-  for (const key of THEME_TOKEN_KEYS) {
-    if (!(key in tokens)) {
-      return { ok: false, error: `tokens 缺少字段：${key}` };
-    }
-  }
-
-  for (const key of stringKeys) {
+  for (const key of legacyRequiredStrings) {
     const value = tokens[key];
     if (typeof value !== "string" || value.trim().length === 0) {
       return { ok: false, error: `tokens.${key} 必须是非空字符串。` };
     }
   }
 
-  for (const key of numberKeys) {
+  for (const key of legacyRequiredNumbers) {
     const value = tokens[key];
     if (typeof value !== "number" || Number.isNaN(value)) {
       return { ok: false, error: `tokens.${key} 必须是有效数字。` };
     }
   }
 
+  const normalized = normalizeThemeTokens(tokens as Partial<ThemeTokenInput>);
+
+  for (const key of THEME_TOKEN_KEYS) {
+    const value = normalized[key];
+    if (value === undefined || value === null || value === "") {
+      return { ok: false, error: `tokens 缺少字段：${key}` };
+    }
+  }
+
   return {
     ok: true,
-    tokens: tokens as ThemeTokenInput,
+    tokens: normalized,
   };
 }
 

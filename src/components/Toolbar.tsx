@@ -2,25 +2,23 @@ import { useState } from "react";
 import { copyHtml } from "../core/copy/copyHtml";
 import { buildWechatOutput } from "../core/platform/wechatAdapter";
 import { renderMarkdown } from "../core/markdown/renderMarkdown";
-import { getActiveTheme, type ThemeId } from "../core/theme/themes";
+import { getActiveTheme } from "../core/theme/themes";
 import { useEditorStore } from "../store/editorStore";
-import { ThemeActions } from "./ThemeActions";
-import { ThemeSelector } from "./ThemeSelector";
 
 interface ToolbarProps {
   markdownValue: string;
-  themeId: ThemeId;
-  onThemeChange: (themeId: ThemeId) => void;
 }
 
-export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps) {
+export function Toolbar({ markdownValue }: ToolbarProps) {
+  const themeId = useEditorStore((state) => state.themeId);
+  const customThemeTokens = useEditorStore((state) => state.customThemeTokens);
+  const customThemeName = useEditorStore((state) => state.customThemeName);
   const copyStatus = useEditorStore((state) => state.copyStatus);
   const statusMessage = useEditorStore((state) => state.statusMessage);
   const warnings = useEditorStore((state) => state.warnings);
-  const customThemeTokens = useEditorStore((state) => state.customThemeTokens);
-  const customThemeName = useEditorStore((state) => state.customThemeName);
   const setCopyStatus = useEditorStore((state) => state.setCopyStatus);
   const setWarnings = useEditorStore((state) => state.setWarnings);
+
   const [copyDialog, setCopyDialog] = useState<{
     title: string;
     message: string;
@@ -74,8 +72,6 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
         <h1>Markdown Publishing Workbench</h1>
       </div>
       <div className="toolbar-actions">
-        <ThemeSelector themeId={themeId} onThemeChange={onThemeChange} />
-        <ThemeActions themeId={themeId} />
         <button className="copy-button" type="button" onClick={handleCopyWechat} disabled={copyStatus === "copying"}>
           {copyStatus === "copying" ? "Copying..." : "Copy for WeChat"}
         </button>

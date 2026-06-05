@@ -27,6 +27,14 @@ const cleanTokens: ThemeTokenInput = {
   paragraphLineHeight: 1.78,
   paragraphSpacing: 14,
   radius: 6,
+  headingStyle: "editorial",
+  baseFontSize: 16,
+  h1FontSize: 30,
+  h2FontSize: 23,
+  h3FontSize: 18,
+  strongColor: "#111827",
+  preBackground: "#f3f6f9",
+  h2Numbering: false,
 };
 
 const techTokens: ThemeTokenInput = {
@@ -44,6 +52,14 @@ const techTokens: ThemeTokenInput = {
   paragraphLineHeight: 1.72,
   paragraphSpacing: 14,
   radius: 6,
+  headingStyle: "accent-bar",
+  baseFontSize: 16,
+  h1FontSize: 32,
+  h2FontSize: 23,
+  h3FontSize: 18,
+  strongColor: "#0f172a",
+  preBackground: "#0f172a",
+  h2Numbering: false,
 };
 
 const wechatCardTokens: ThemeTokenInput = {
@@ -61,6 +77,14 @@ const wechatCardTokens: ThemeTokenInput = {
   paragraphLineHeight: 1.85,
   paragraphSpacing: 14,
   radius: 6,
+  headingStyle: "card",
+  baseFontSize: 16,
+  h1FontSize: 28,
+  h2FontSize: 22,
+  h3FontSize: 18,
+  strongColor: "#8b4d22",
+  preBackground: "#2a2118",
+  h2Numbering: true,
 };
 
 export const themes: ThemeDefinition[] = [
@@ -305,6 +329,7 @@ export const themes: ThemeDefinition[] = [
   font-size: 16px;
   line-height: 1.85;
   letter-spacing: 0;
+  counter-reset: r2md-h2;
 }
 .r2md-article h1 {
   margin: 0 0 24px;
@@ -319,9 +344,10 @@ export const themes: ThemeDefinition[] = [
   margin: 34px 0 16px;
   color: #5d3f25;
   font-size: 22px;
+  counter-increment: r2md-h2;
 }
 .r2md-article h2::before {
-  content: "01";
+  content: counter(r2md-h2, decimal-leading-zero);
   display: inline-block;
   min-width: 28px;
   margin-right: 10px;

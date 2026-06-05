@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import juice from "juice";
 import { applyThemeHtml } from "../theme/applyTheme";
+import { injectH2Numbering, stripH2PseudoCss, themeUsesH2Numbering } from "../theme/h2Numbering";
 import { extractPlainTextFromHtml, type PlatformAdapterInput, type PlatformOutput } from "./commonAdapter";
 
 const formulaCompatibilityNote =
@@ -28,17 +29,23 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
   // cheerio, which lowercases attribute names (viewBox -> viewbox) and would
   // break SVG rendering. The formulas are restored verbatim at the very end.
   const { html: htmlWithoutSvg, svgMap } = extractSvgPlaceholders(themed.html);
+  const usesH2Numbering = themeUsesH2Numbering(input.theme);
+  const badgeColor = input.theme.tokens?.primaryColor ?? "#95633a";
+  const htmlForInline = usesH2Numbering
+    ? injectH2Numbering(htmlWithoutSvg, badgeColor)
+    : htmlWithoutSvg;
+  const cssForInline = usesH2Numbering ? stripH2PseudoCss(themed.css) : themed.css;
 
   let inlineHtml = "";
 
   try {
-    inlineHtml = juice.inlineContent(htmlWithoutSvg, themed.css, {
+    inlineHtml = juice.inlineContent(htmlForInline, cssForInline, {
       inlinePseudoElements: true,
       preserveImportant: true,
     });
   } catch (error) {
     warnings.push(error instanceof Error ? error.message : "Failed to inline theme CSS.");
-    inlineHtml = htmlWithoutSvg;
+    inlineHtml = htmlForInline;
   }
 
   const sanitizedHtml = DOMPurify.sanitize(inlineHtml, {
