@@ -40,10 +40,16 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
 }
 
 button,
@@ -52,9 +58,11 @@ select {
 }
 
 .app-shell {
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .toolbar {
@@ -62,11 +70,12 @@ select {
   grid-template-columns: minmax(220px, 1fr) auto;
   gap: 14px 24px;
   align-items: center;
+  flex-shrink: 0;
   padding: 12px 20px;
   background: var(--r2md-surface);
   border-bottom: 1px solid var(--r2md-border);
   box-shadow: var(--r2md-shadow);
-  z-index: 2;
+  z-index: 4;
 }
 
 .brand-block {
@@ -461,6 +470,7 @@ select {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .workspace-split-left {
@@ -469,6 +479,13 @@ select {
 
 .workspace-split-right {
   flex: 1;
+}
+
+.workspace-split-left > .pane,
+.workspace-split-right > .pane {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
 }
 
 .workspace-split-handle {
@@ -494,7 +511,10 @@ body.is-resizing {
 .document-list-pane {
   width: 260px;
   flex-shrink: 0;
+  align-self: stretch;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
   display: grid;
   grid-template-rows: auto auto 1fr;
   background: var(--r2md-surface);
@@ -503,6 +523,8 @@ body.is-resizing {
 
 .document-list-pane-collapsed {
   width: 44px;
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1384,6 +1406,7 @@ body.is-resizing {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
   min-height: 44px;
   padding: 0 14px;
   color: var(--r2md-text);
@@ -1391,6 +1414,14 @@ body.is-resizing {
   border-bottom: 1px solid var(--r2md-border);
   font-size: 13px;
   font-weight: 700;
+  z-index: 2;
+}
+
+.pane-body {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .pane-note {
@@ -1399,14 +1430,19 @@ body.is-resizing {
   font-weight: 700;
 }
 
+.editor-pane .markdown-editor,
 .editor-pane .cm-editor {
+  flex: 1;
+  min-height: 0;
   height: 100%;
+  overflow: hidden;
   font-size: 15px;
 }
 
 .editor-pane .cm-scroller {
   font-family: "SFMono-Regular", Consolas, monospace;
   line-height: 1.7;
+  overflow: auto;
   overflow-x: hidden;
 }
 
@@ -1456,6 +1492,20 @@ body.is-resizing {
 }
 
 @media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
   .toolbar {
     grid-template-columns: 1fr;
   }

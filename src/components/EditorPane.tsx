@@ -42,19 +42,21 @@ export function EditorPane({ markdownValue, onMarkdownChange }: EditorPaneProps)
       <div className="pane-header">
         <span>Markdown</span>
       </div>
-      <CodeMirror
-        key={activeDocId ?? "no-doc"}
-        value={markdownValue}
-        height="100%"
-        extensions={extensions}
-        basicSetup={{
-          lineNumbers: false,
-          foldGutter: false,
-          highlightActiveLine: false,
-        }}
-        onChange={onMarkdownChange}
-        className="markdown-editor"
-      />
+      <div className="pane-body">
+        <CodeMirror
+          key={activeDocId ?? "no-doc"}
+          value={markdownValue}
+          height="100%"
+          extensions={extensions}
+          basicSetup={{
+            lineNumbers: false,
+            foldGutter: false,
+            highlightActiveLine: false,
+          }}
+          onChange={onMarkdownChange}
+          className="markdown-editor"
+        />
+      </div>
     </section>
   );
 }
