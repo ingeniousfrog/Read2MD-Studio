@@ -119,6 +119,7 @@ function importProxyPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), importProxyPlugin()],
+  base: "./",
   define: {
     PACKAGE_VERSION: JSON.stringify("3.2.1"),
   },

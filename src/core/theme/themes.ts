@@ -1,5 +1,5 @@
 import { buildCustomTheme } from "./compileTheme";
-import type { ThemeTokenInput } from "./themeTokens";
+import { normalizeThemeTokens, type ThemeTokenInput } from "./themeTokens";
 
 export type ThemeId = "clean" | "tech" | "wechat-card" | "custom";
 
@@ -12,7 +12,7 @@ export interface ThemeDefinition {
   isCustom?: boolean;
 }
 
-const cleanTokens: ThemeTokenInput = {
+const cleanTokens = normalizeThemeTokens({
   primaryColor: "#176b87",
   textColor: "#25313f",
   mutedColor: "#536171",
@@ -35,9 +35,12 @@ const cleanTokens: ThemeTokenInput = {
   strongColor: "#111827",
   preBackground: "#f3f6f9",
   h2Numbering: false,
-};
+  h3Color: "#24324a",
+  h3FontWeight: 600,
+  codeTextColor: "#25313f",
+});
 
-const techTokens: ThemeTokenInput = {
+const techTokens = normalizeThemeTokens({
   primaryColor: "#168aad",
   textColor: "#18212f",
   mutedColor: "#334155",
@@ -60,9 +63,12 @@ const techTokens: ThemeTokenInput = {
   strongColor: "#0f172a",
   preBackground: "#0f172a",
   h2Numbering: false,
-};
+  h2Color: "#102033",
+  h3Color: "#23566b",
+  codeTextColor: "#dce9f2",
+});
 
-const wechatCardTokens: ThemeTokenInput = {
+const wechatCardTokens = normalizeThemeTokens({
   primaryColor: "#95633a",
   textColor: "#2e2a25",
   mutedColor: "#5c4b3a",
@@ -85,7 +91,10 @@ const wechatCardTokens: ThemeTokenInput = {
   strongColor: "#8b4d22",
   preBackground: "#2a2118",
   h2Numbering: true,
-};
+  h2Color: "#5d3f25",
+  h3Color: "#725436",
+  codeTextColor: "#f7efe5",
+});
 
 export const themes: ThemeDefinition[] = [
   {

@@ -1,5 +1,6 @@
 import type { ThemeDefinition } from "./themes";
-import type { HeadingStyle, ThemeTokenInput } from "./themeTokens";
+import type { HeadingLevelConfig, HeadingStyle, ThemeTokenInput } from "./themeTokens";
+import { getHeadingLevel } from "./themeTokens";
 
 function h2BadgeCss(primaryColor: string): string {
   return `
@@ -16,47 +17,116 @@ function h2BadgeCss(primaryColor: string): string {
 }`;
 }
 
-function buildHeadingCss(tokens: ThemeTokenInput): string {
-  const {
-    headingStyle,
-    headingColor,
-    headingFontWeight,
-    h1FontSize,
-    h2FontSize,
-    h3FontSize,
-    primaryColor,
-    borderColor,
-    blockquoteBackground,
-    h2Numbering,
-  } = tokens;
+function headingMargin(level: number): string {
+  if (level === 1) {
+    return "0 0 24px";
+  }
+  if (level === 2) {
+    return "30px 0 14px";
+  }
+  if (level === 3) {
+    return "24px 0 10px";
+  }
+  if (level === 4) {
+    return "20px 0 8px";
+  }
+  if (level === 5) {
+    return "18px 0 8px";
+  }
+  return "16px 0 8px";
+}
+
+function buildGenericHeadingRule(level: HeadingLevelConfig): string {
+  return `
+.r2md-article h${level.level} {
+  margin: ${headingMargin(level.level)};
+  color: ${level.color};
+  font-size: ${level.fontSize}px;
+  font-weight: ${level.fontWeight};
+  line-height: 1.35;
+}`;
+}
+
+function buildStyledHeadingRule(
+  level: HeadingLevelConfig,
+  tokens: ThemeTokenInput,
+): string {
+  const { headingStyle, primaryColor, borderColor, blockquoteBackground } = tokens;
+  const tag = `h${level.level}`;
+  const base = `color: ${level.color}; font-size: ${level.fontSize}px; font-weight: ${level.fontWeight};`;
 
   if (headingStyle === "wechat") {
     return `
-.r2md-article h1 {
-  margin: 0 0 20px;
-  color: ${headingColor};
-  font-size: ${h1FontSize}px;
-  font-weight: ${headingFontWeight};
-  line-height: 1.4;
-}
-.r2md-article h2 {
-  margin: 28px 0 12px;
-  color: ${headingColor};
-  font-size: ${h2FontSize}px;
-  font-weight: ${headingFontWeight};
-  line-height: 1.4;
-}
-.r2md-article h3 {
-  margin: 20px 0 10px;
-  color: ${headingColor};
-  font-size: ${h3FontSize}px;
-  font-weight: ${headingFontWeight};
+.r2md-article ${tag} {
+  margin: ${headingMargin(level.level)};
+  ${base}
   line-height: 1.4;
 }`;
   }
 
-  if (headingStyle === "card") {
-    const counterCss = h2Numbering
+  if (headingStyle === "card" && level.level === 1) {
+    return `
+.r2md-article h1 {
+  margin: 0 0 24px;
+  padding: 18px 20px;
+  ${base}
+  line-height: 1.28;
+  background: ${blockquoteBackground};
+  border: 1px solid ${borderColor};
+}`;
+  }
+
+  if (headingStyle === "accent-bar" && level.level === 1) {
+    return `
+.r2md-article h1 {
+  margin: 0 0 26px;
+  ${base}
+  line-height: 1.18;
+}
+.r2md-article h1::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 4px;
+  margin-top: 14px;
+  background: ${primaryColor};
+}`;
+  }
+
+  if (headingStyle === "accent-bar" && level.level === 2) {
+    return `
+.r2md-article h2 {
+  margin: 34px 0 16px;
+  padding-left: 12px;
+  border-left: 4px solid ${primaryColor};
+  ${base}
+}`;
+  }
+
+  if (headingStyle === "editorial" && level.level === 1) {
+    return `
+.r2md-article h1 {
+  ${base}
+  line-height: 1.25;
+  margin: 0 0 24px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid ${borderColor};
+}`;
+  }
+
+  if (level.level <= 3) {
+    return buildGenericHeadingRule(level);
+  }
+
+  return buildGenericHeadingRule(level);
+}
+
+function buildHeadingCss(tokens: ThemeTokenInput): string {
+  const { headingStyle, primaryColor, h2Numbering, headingLevels } = tokens;
+  const sortedLevels = [...headingLevels].sort((a, b) => a.level - b.level);
+
+  const counterCss =
+    h2Numbering && sortedLevels.some((entry) => entry.level === 2)
       ? `
 .r2md-article {
   counter-reset: r2md-h2;
@@ -67,90 +137,59 @@ function buildHeadingCss(tokens: ThemeTokenInput): string {
 .r2md-article h2::before {
   content: counter(r2md-h2, decimal-leading-zero);
 }
-${h2BadgeCss(primaryColor)}`
+${headingStyle === "card" ? h2BadgeCss(primaryColor) : h2BadgeCss(primaryColor)}`
       : "";
 
-    return `
-.r2md-article h1 {
-  margin: 0 0 24px;
-  padding: 18px 20px;
-  color: ${headingColor};
-  font-size: ${h1FontSize}px;
-  font-weight: ${headingFontWeight};
-  line-height: 1.28;
-  background: ${blockquoteBackground};
-  border: 1px solid ${borderColor};
-}
-.r2md-article h2 {
-  margin: 34px 0 16px;
-  color: ${primaryColor};
-  font-size: ${h2FontSize}px;
-  font-weight: ${headingFontWeight};
-}
-.r2md-article h3 {
-  margin: 26px 0 10px;
-  color: ${headingColor};
-  font-size: ${h3FontSize}px;
-  font-weight: ${headingFontWeight};
-}
-${counterCss}`;
-  }
+  const rules = sortedLevels
+    .map((level) => buildStyledHeadingRule(getHeadingLevel(tokens, level.level), tokens))
+    .join("\n");
 
-  if (headingStyle === "accent-bar") {
-    return `
-.r2md-article h1 {
-  margin: 0 0 26px;
-  color: ${headingColor};
-  font-size: ${h1FontSize}px;
-  font-weight: ${headingFontWeight};
-  line-height: 1.18;
+  return `${rules}${counterCss}`;
 }
-.r2md-article h1::after {
-  content: "";
-  display: block;
-  width: 72px;
-  height: 4px;
-  margin-top: 14px;
-  background: ${primaryColor};
-}
-.r2md-article h2 {
-  margin: 34px 0 16px;
-  padding-left: 12px;
-  border-left: 4px solid ${primaryColor};
-  color: ${headingColor};
-  font-size: ${h2FontSize}px;
-  font-weight: ${headingFontWeight};
-}
-.r2md-article h3 {
-  margin: 26px 0 10px;
-  color: ${primaryColor};
-  font-size: ${h3FontSize}px;
-  font-weight: ${headingFontWeight};
-}`;
-  }
+
+function buildFormulaCss(tokens: ThemeTokenInput): string {
+  const {
+    formulaColor,
+    formulaFontScale,
+    formulaBackground,
+    formulaCardEnabled,
+    formulaCardBorderColor,
+    formulaCardRadius,
+    formulaCardPadding,
+    baseFontSize,
+  } = tokens;
+
+  const fontSize = Math.round(baseFontSize * formulaFontScale);
+  const cardStyles = formulaCardEnabled
+    ? `
+  padding: ${formulaCardPadding}px;
+  background: ${formulaBackground};
+  border: 1px solid ${formulaCardBorderColor};
+  border-radius: ${formulaCardRadius}px;`
+    : "";
 
   return `
-.r2md-article h1 {
-  color: ${headingColor};
-  font-size: ${h1FontSize}px;
-  font-weight: ${headingFontWeight};
-  line-height: 1.25;
-  margin: 0 0 24px;
-  padding-bottom: 14px;
-  border-bottom: 2px solid ${borderColor};
+.r2md-article .r2md-formula-block {
+  margin: 18px 0;
+  text-align: center;
+  overflow-x: auto;
+  color: ${formulaColor};
+  font-size: ${fontSize}px;${cardStyles}
 }
-.r2md-article h2 {
-  color: ${headingColor};
-  font-size: ${h2FontSize}px;
-  font-weight: ${headingFontWeight};
-  line-height: 1.35;
-  margin: 34px 0 14px;
+.r2md-article .r2md-formula-block svg {
+  color: ${formulaColor};
 }
-.r2md-article h3 {
-  color: ${headingColor};
-  font-size: ${h3FontSize}px;
-  font-weight: ${headingFontWeight};
-  margin: 26px 0 10px;
+.r2md-article .r2md-formula-inline {
+  display: inline;
+  color: ${formulaColor};
+  font-size: ${fontSize}px;
+  vertical-align: middle;
+}
+.r2md-article .r2md-formula-inline svg {
+  color: ${formulaColor};
+}
+.r2md-article .r2md-formula-error {
+  color: #a33934;
 }`;
 }
 
@@ -173,12 +212,22 @@ export function compileThemeCss(tokens: ThemeTokenInput): string {
     strongColor,
     preBackground,
     headingStyle,
+    codeFontSize,
+    codeTextColor,
+    imageRadius,
+    imageBorderColor,
+    imageShadow,
+    imageCaptionColor,
   } = tokens;
 
   const linkDecoration =
     headingStyle === "card" ? "dashed" : headingStyle === "wechat" ? "none" : "solid";
   const blockquoteBorderWidth = headingStyle === "card" ? 5 : 4;
-  const preCodeColor = headingStyle === "card" ? blockquoteBackground : "inherit";
+  const imageShadowCss = imageShadow
+    ? "box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);"
+    : "";
+  const imageBorderCss =
+    imageBorderColor !== "transparent" ? `border: 1px solid ${imageBorderColor};` : "";
 
   return `
 .r2md-article {
@@ -190,6 +239,7 @@ export function compileThemeCss(tokens: ThemeTokenInput): string {
   background: ${backgroundColor};
 }
 ${buildHeadingCss(tokens)}
+${buildFormulaCss(tokens)}
 .r2md-article p {
   margin: ${paragraphSpacing}px 0;
 }
@@ -255,6 +305,7 @@ ${buildHeadingCss(tokens)}
   background: ${codeBackground};
   color: ${primaryColor};
   font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: ${codeFontSize}px;
 }
 .r2md-article pre {
   overflow: auto;
@@ -266,13 +317,23 @@ ${buildHeadingCss(tokens)}
 .r2md-article pre code {
   padding: 0;
   background: transparent;
-  color: ${preCodeColor};
+  color: ${codeTextColor};
+  font-size: ${codeFontSize}px;
 }
 .r2md-article img {
   display: block;
   max-width: 100%;
   margin: 22px auto;
-  border-radius: ${radius}px;
+  border-radius: ${imageRadius}px;
+  ${imageBorderCss}
+  ${imageShadowCss}
+}
+.r2md-article figcaption,
+.r2md-article .r2md-image-caption {
+  margin-top: 8px;
+  color: ${imageCaptionColor};
+  font-size: 13px;
+  text-align: center;
 }
 `;
 }
@@ -293,10 +354,10 @@ export function headingStyleLabel(style: HeadingStyle): string {
     return "公众号原文风";
   }
   if (style === "card") {
-    return "卡片风（排版模板）";
+    return "卡片风";
   }
   if (style === "accent-bar") {
-    return "强调条（科技风）";
+    return "强调条";
   }
-  return "编辑风（简洁）";
+  return "编辑风";
 }

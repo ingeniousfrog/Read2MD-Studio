@@ -68,12 +68,15 @@ export function Toolbar({ markdownValue }: ToolbarProps) {
   return (
     <header className="toolbar">
       <div className="brand-block">
-        <p className="eyebrow">Read2MD Studio</p>
-        <h1>Markdown Publishing Workbench</h1>
+        <img className="brand-logo" src="./favicon.svg" alt="" width={36} height={36} />
+        <div>
+          <p className="eyebrow">Read2MD Studio</p>
+          <h1>Markdown 发布工作台</h1>
+        </div>
       </div>
       <div className="toolbar-actions">
         <button className="copy-button" type="button" onClick={handleCopyWechat} disabled={copyStatus === "copying"}>
-          {copyStatus === "copying" ? "Copying..." : "Copy for WeChat"}
+          {copyStatus === "copying" ? "复制中…" : "复制到公众号"}
         </button>
       </div>
       {!copyDialog && (

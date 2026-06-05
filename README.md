@@ -6,21 +6,26 @@ The current MVP focuses on one clean workflow:
 
 Markdown editing -> live preview -> theme styling -> WeChat-ready inline HTML -> clipboard
 
-It is intentionally small. There is no backend, login, image hosting, article management, Rust, or WASM in this first version. The TypeScript core is split into clear modules so the rendering, theme, and platform layers can later be replaced by Rust/WASM implementations.
+The TypeScript core is split into clear modules so the rendering, theme, and platform layers can evolve independently. A Tauri desktop build is also available for local installation.
 
 ## Features
 
 - Markdown editor powered by CodeMirror 6
 - Live preview rendered with `markdown-it`
+- Math formula rendering (MathJax SVG)
 - Code block highlighting with `highlight.js`
-- Three built-in article themes:
+- Three built-in article themes plus custom theme editor:
   - `clean`
   - `tech`
   - `wechat-card`
+- Tabbed theme panel: headings (H1/H2/H3), formulas, code blocks, images, quotes/tables
+- URL import for WeChat articles and generic web pages
+- Multi-document library with local persistence
 - WeChat copy flow using `juice` to inline CSS
 - HTML cleanup with DOMPurify
 - Draft and theme autosave in `localStorage`
 - Zustand store for editor state
+- macOS desktop app (`.dmg`) via Tauri
 
 ## Project Structure
 
@@ -86,6 +91,35 @@ Preview the production build:
 npm run preview
 ```
 
+## Desktop App (Tauri)
+
+### Prerequisites
+
+- [Rust](https://www.rust-lang.org/tools/install) (1.77+)
+- Xcode Command Line Tools (macOS): `xcode-select --install`
+
+### Development
+
+```bash
+npm run tauri:dev
+```
+
+This starts the Vite dev server and opens the app in a native window. URL import uses the Tauri HTTP plugin in desktop mode and the Vite dev proxy in browser mode.
+
+### Build macOS `.dmg`
+
+```bash
+npm run tauri:build
+```
+
+Output:
+
+```text
+src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.1.0_aarch64.dmg
+```
+
+On first launch, unsigned builds may require right-click → Open to bypass Gatekeeper. If the app bounces in the dock and quits immediately, rebuild with `npm run tauri:build` after pulling the latest fixes.
+
 ## How To Use
 
 1. Write or paste Markdown in the left editor.
@@ -110,17 +144,7 @@ The preview pane uses normal browser HTML and scoped theme CSS. The copy button 
 ## Current Limitations
 
 - No image upload or image hosting
-- No formula rendering or formula-to-image conversion
 - No Zhihu or Juejin copy adapters yet
-- No backend API
-- No authentication
-- No article library or version history
-- No Rust/WASM implementation yet
-
-Future Rust-oriented boundaries are already represented by the TypeScript modules:
-
-- `core/markdown` can become `md_core`
-- `core/theme` can become `md_theme`
-- `core/platform` can become `md_platform`
-- a future `md_wasm` package can expose those modules to the web app
-- a future `md_cli` can reuse the same conversion ideas for batch workflows
+- No cloud sync or authentication
+- Desktop `.dmg` is unsigned (no notarization)
+- WeChat import may hit environment verification on some networks

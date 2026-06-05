@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DocumentSource } from "../core/document/documentTypes";
 import { useEditorStore } from "../store/editorStore";
 import { ImportDialog } from "./ImportDialog";
@@ -43,8 +43,11 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
   const [importOpen, setImportOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const startRename = (id: string, currentTitle: string) => {
+    setOpenMenuId(null);
     setRenamingId(id);
     setRenameValue(currentTitle);
   };
@@ -56,6 +59,31 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
       setRenameValue("");
     }
   };
+
+  useEffect(() => {
+    if (!openMenuId) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openMenuId]);
 
   if (collapsed) {
     return (
@@ -138,36 +166,63 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
                     </button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    className={`document-list-item${
-                      activeDocId === doc.id ? " document-list-item-active" : ""
-                    }`}
-                    onClick={() => selectDocument(doc.id)}
+                  <div
+                    className="document-list-item-row"
+                    ref={openMenuId === doc.id ? menuRef : undefined}
                   >
-                    <span className="document-list-title">{doc.title}</span>
-                    <span className="document-list-meta">
-                      <span className="document-source-badge">{sourceLabel(doc.source)}</span>
-                      {formatTimestamp(doc.updatedAt)}
-                    </span>
-                  </button>
+                    <button
+                      type="button"
+                      className={`document-list-item${
+                        activeDocId === doc.id ? " document-list-item-active" : ""
+                      }`}
+                      onClick={() => {
+                        selectDocument(doc.id);
+                        setOpenMenuId(null);
+                      }}
+                    >
+                      <span className="document-list-title">{doc.title}</span>
+                      <span className="document-list-meta">
+                        <span className="document-source-badge">{sourceLabel(doc.source)}</span>
+                        {formatTimestamp(doc.updatedAt)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="document-list-item-menu-trigger"
+                      aria-label={`文档操作：${doc.title}`}
+                      aria-expanded={openMenuId === doc.id}
+                      aria-haspopup="menu"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setOpenMenuId((prev) => (prev === doc.id ? null : doc.id));
+                      }}
+                    >
+                      ⋯
+                    </button>
+                    {openMenuId === doc.id && (
+                      <div className="doc-item-menu" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => startRename(doc.id, doc.title)}
+                        >
+                          重命名
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="doc-item-menu-danger"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            removeDocument(doc.id);
+                          }}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
-                <div className="document-list-item-actions">
-                  <button
-                    type="button"
-                    aria-label={`重命名 ${doc.title}`}
-                    onClick={() => startRename(doc.id, doc.title)}
-                  >
-                    重命名
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`删除 ${doc.title}`}
-                    onClick={() => removeDocument(doc.id)}
-                  >
-                    删除
-                  </button>
-                </div>
               </li>
             ))}
           </ul>

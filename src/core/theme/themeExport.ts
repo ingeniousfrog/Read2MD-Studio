@@ -111,6 +111,12 @@ function validateTokens(
   const normalized = normalizeThemeTokens(tokens as Partial<ThemeTokenInput>);
 
   for (const key of THEME_TOKEN_KEYS) {
+    if (key === "headingLevels") {
+      if (!Array.isArray(normalized.headingLevels) || normalized.headingLevels.length === 0) {
+        return { ok: false, error: "tokens.headingLevels 必须是非空数组。" };
+      }
+      continue;
+    }
     const value = normalized[key];
     if (value === undefined || value === null || value === "") {
       return { ok: false, error: `tokens 缺少字段：${key}` };

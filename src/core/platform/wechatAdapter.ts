@@ -25,10 +25,11 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
     warnings.push(imageCompatibilityWarning);
   }
 
-  // Pull the MathJax SVG formulas out before inlining CSS. juice relies on
-  // cheerio, which lowercases attribute names (viewBox -> viewbox) and would
-  // break SVG rendering. The formulas are restored verbatim at the very end.
-  const { html: htmlWithoutSvg, svgMap } = extractSvgPlaceholders(themed.html);
+  // Pull formula blocks out before inlining CSS. juice relies on cheerio, which
+  // lowercases attribute names (viewBox -> viewbox) and breaks SVG rendering.
+  // MathJax may emit nested <svg> nodes (e.g. underbrace labels); a naive
+  // <svg>...</svg> regex would split them and drop inner content on restore.
+  const { html: htmlWithoutSvg, svgMap } = extractFormulaPlaceholders(themed.html);
   const usesH2Numbering = themeUsesH2Numbering(input.theme);
   const badgeColor = input.theme.tokens?.primaryColor ?? "#95633a";
   const htmlForInline = usesH2Numbering
@@ -72,12 +73,22 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
   };
 }
 
-function extractSvgPlaceholders(html: string): { html: string; svgMap: Map<string, string> } {
+const formulaBlockPattern =
+  /<section\s+class="[^"]*\br2md-formula-block\b[^"]*"[^>]*>[\s\S]*?<\/section>/gi;
+const formulaInlinePattern =
+  /<span\s+class="[^"]*\br2md-formula-inline\b[^"]*"[^>]*>[\s\S]*?<\/span>/gi;
+
+function extractFormulaPlaceholders(html: string): { html: string; svgMap: Map<string, string> } {
   const svgMap = new Map<string, string>();
   let index = 0;
 
-  const replaced = html.replace(/<svg[\s\S]*?<\/svg>/gi, (match) => {
-    const token = `@@R2MD_SVG_${index}@@`;
+  const replaced = html.replace(formulaBlockPattern, (match) => {
+    const token = `@@R2MD_FORMULA_${index}@@`;
+    svgMap.set(token, match);
+    index += 1;
+    return token;
+  }).replace(formulaInlinePattern, (match) => {
+    const token = `@@R2MD_FORMULA_${index}@@`;
     svgMap.set(token, match);
     index += 1;
     return token;

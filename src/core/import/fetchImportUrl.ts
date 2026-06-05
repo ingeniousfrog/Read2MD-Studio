@@ -1,6 +1,7 @@
 import type { FetchWechatFailureReason } from "./importTypes";
 import { formatImportErrorMessage } from "./formatImportError";
 import { isValidWechatArticleUrl } from "./fetchWechatArticle";
+import { isTauriRuntime } from "./tauriRuntime";
 
 export type ImportUrlKind = "wechat" | "generic";
 
@@ -62,16 +63,7 @@ function buildImportFailure(
   };
 }
 
-export async function fetchImportUrl(url: string): Promise<FetchImportUrlResult> {
-  const kind = detectImportUrlKind(url);
-  if (!kind) {
-    return {
-      ok: false,
-      reason: "invalid-url",
-      message: "请输入有效的 http 或 https 链接。",
-    };
-  }
-
+async function fetchImportUrlViaProxy(url: string, kind: ImportUrlKind): Promise<FetchImportUrlResult> {
   try {
     let response = await requestImportUrl(url);
     let payload = await readImportPayload(response);
@@ -100,4 +92,22 @@ export async function fetchImportUrl(url: string): Promise<FetchImportUrlResult>
       message: formatImportErrorMessage(rawMessage),
     };
   }
+}
+
+export async function fetchImportUrl(url: string): Promise<FetchImportUrlResult> {
+  const kind = detectImportUrlKind(url);
+  if (!kind) {
+    return {
+      ok: false,
+      reason: "invalid-url",
+      message: "请输入有效的 http 或 https 链接。",
+    };
+  }
+
+  if (isTauriRuntime()) {
+    const { fetchImportUrlClient } = await import("./fetchHtmlClient");
+    return fetchImportUrlClient(url);
+  }
+
+  return fetchImportUrlViaProxy(url, kind);
 }

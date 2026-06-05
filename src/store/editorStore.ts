@@ -17,6 +17,7 @@ import {
 import {
   defaultCustomTokens,
   normalizeThemeTokens,
+  type HeadingLevelConfig,
   type ThemeTokenInput,
 } from "../core/theme/themeTokens";
 import { sampleMarkdown } from "../fixtures/sampleMarkdown";
@@ -61,6 +62,7 @@ interface EditorState {
     key: K,
     value: ThemeTokenInput[K],
   ) => void;
+  setHeadingLevels: (levels: HeadingLevelConfig[]) => void;
   resetCustomThemeFromTheme: (themeId: Exclude<ThemeId, "custom">) => void;
   setCustomThemeName: (name: string) => void;
   setCustomThemeTokens: (tokens: ThemeTokenInput) => void;
@@ -439,7 +441,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   updateCustomThemeToken: (key, value) => {
     const state = get();
-    const customThemeTokens = { ...state.customThemeTokens, [key]: value };
+    const customThemeTokens = normalizeThemeTokens({
+      ...state.customThemeTokens,
+      [key]: value,
+    });
     const documents = updateActiveDocument(get, {
       customThemeTokens,
       themeId: "custom",
@@ -449,6 +454,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       themeId: "custom",
       documents,
       statusMessage: "自定义主题已更新",
+    });
+  },
+
+  setHeadingLevels: (levels) => {
+    const customThemeTokens = normalizeThemeTokens({
+      ...get().customThemeTokens,
+      headingLevels: levels,
+    });
+    const documents = updateActiveDocument(get, {
+      customThemeTokens,
+      themeId: "custom",
+    });
+    set({
+      customThemeTokens,
+      themeId: "custom",
+      documents,
+      statusMessage: "标题样式已更新",
     });
   },
 

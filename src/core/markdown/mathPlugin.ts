@@ -106,18 +106,24 @@ function renderInlineMath(tokens: Token[], index: number): string {
 function renderBlockMath(tokens: Token[], index: number): string {
   const svg = renderMath(tokens[index].content, true);
 
-  return `<section class="r2md-formula-block" style="margin:18px 0;text-align:center;overflow-x:auto;">${svg}</section>\n`;
+  return `<section class="r2md-formula-block">${svg}</section>\n`;
 }
 
 function renderMath(content: string, displayMode: boolean): string {
   try {
-    return texToSvg(content, { displayMode });
+    const svg = texToSvg(content, { displayMode });
+
+    if (displayMode) {
+      return svg;
+    }
+
+    return `<span class="r2md-formula-inline">${svg}</span>`;
   } catch {
     const escaped = escapeHtml(content);
 
     return displayMode
-      ? `<section style="margin:18px 0;text-align:center;color:#a33934;">$$ ${escaped} $$</section>`
-      : `<code style="color:#a33934;">$ ${escaped} $</code>`;
+      ? `<section class="r2md-formula-block r2md-formula-error">$$ ${escaped} $$</section>`
+      : `<span class="r2md-formula-inline r2md-formula-error">$ ${escaped} $</span>`;
   }
 }
 
