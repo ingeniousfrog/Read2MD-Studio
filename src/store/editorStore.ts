@@ -264,7 +264,7 @@ function readImportHistory(): ImportedArticle[] {
   }
 }
 
-function migrateToDocuments(): { documents: StudioDocument[]; activeDocId: string } {
+function migrateToDocuments(): { documents: StudioDocument[]; activeDocId: string | null } {
   const stored = typeof window !== "undefined" ? window.localStorage.getItem(documentsStorageKey) : null;
 
   if (stored) {
@@ -280,6 +280,7 @@ function migrateToDocuments(): { documents: StudioDocument[]; activeDocId: strin
         if (documents.length > 0) {
           return { documents, activeDocId: documents[0].id };
         }
+        return { documents: [], activeDocId: null };
       }
     } catch {
       // fall through to migration
@@ -314,7 +315,7 @@ function migrateToDocuments(): { documents: StudioDocument[]; activeDocId: strin
 
   return {
     documents,
-    activeDocId: documents[0]?.id ?? "",
+    activeDocId: documents[0]?.id ?? null,
   };
 }
 
@@ -371,6 +372,25 @@ function syncLegacyStorage(doc: StudioDocument): void {
       customThemeName: doc.customThemeName,
     }),
   );
+}
+
+function clearLegacyStorage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.removeItem(legacyStorageKey);
+}
+
+function emptyWorkspaceMirror(): Pick<
+  EditorState,
+  "markdown" | "themeId" | "customThemeTokens" | "customThemeName"
+> {
+  return {
+    markdown: "",
+    themeId: defaultThemeId,
+    customThemeTokens: defaultCustomTokens,
+    customThemeName: "Custom",
+  };
 }
 
 function documentToMirror(doc: StudioDocument): Pick<
@@ -657,14 +677,20 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   removeDocument: (id) => {
     const state = get();
-    if (state.documents.length <= 1) {
-      set({ statusMessage: "至少保留一篇文档" });
-      return;
-    }
-
     void deleteDocumentAssetsDir(id);
     const documents = state.documents.filter((doc) => doc.id !== id);
     persistDocuments(documents);
+
+    if (documents.length === 0) {
+      clearLegacyStorage();
+      set({
+        documents,
+        activeDocId: null,
+        ...emptyWorkspaceMirror(),
+        statusMessage: "已删除全部文档",
+      });
+      return;
+    }
 
     if (state.activeDocId === id) {
       const next = documents[0];

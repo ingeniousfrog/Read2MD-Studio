@@ -13,6 +13,13 @@
       ]
     },
     {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "$APPDATA/read2md-studio" },
+        { "path": "$APPDATA/read2md-studio/**" }
+      ]
+    },
+    {
       "identifier": "fs:allow-app-read-recursive",
       "allow": [
         { "path": "$APPDATA/read2md-studio" },

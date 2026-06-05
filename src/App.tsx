@@ -34,9 +34,15 @@ function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const resolved = await resolveMarkdownAssetUrls(activeDocId, markdown);
-      if (!cancelled) {
-        setPreviewMarkdown(resolved);
+      try {
+        const resolved = await resolveMarkdownAssetUrls(activeDocId, markdown);
+        if (!cancelled) {
+          setPreviewMarkdown(resolved);
+        }
+      } catch {
+        if (!cancelled) {
+          setPreviewMarkdown(markdown);
+        }
       }
     })();
     return () => {

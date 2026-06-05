@@ -1,4 +1,4 @@
-import { ensureDocumentAssetsDir } from "./assetStorage";
+import { ensureDocumentAssetsDir, writeDocumentAssetFile } from "./assetStorage";
 import { saveBrowserAsset } from "./browserAssetStorage";
 import { assetFilename, toR2mdAssetUrl } from "./imageUrl";
 import { isTauriRuntime } from "../import/tauriRuntime";
@@ -53,9 +53,7 @@ export async function saveUserImage(
     if (!assetsDir) {
       throw new Error("无法创建本地 assets 目录");
     }
-    const { join } = await import("@tauri-apps/api/path");
-    const { writeFile } = await import("@tauri-apps/plugin-fs");
-    await writeFile(await join(assetsDir, filename), bytes);
+    await writeDocumentAssetFile(docId, filename, bytes);
   } else {
     if (typeof indexedDB === "undefined") {
       throw new Error("当前环境无法保存图片");

@@ -5,6 +5,8 @@ import { EditorView } from "@codemirror/view";
 import { editorImageExtension } from "./editorImageExtension";
 import { useEditorStore } from "../store/editorStore";
 
+const EMPTY_ASSET_FILES: string[] = [];
+
 interface EditorPaneProps {
   markdownValue: string;
   onMarkdownChange: (markdownValue: string) => void;
@@ -14,7 +16,7 @@ export function EditorPane({ markdownValue, onMarkdownChange }: EditorPaneProps)
   const activeDocId = useEditorStore((state) => state.activeDocId);
   const assetFiles = useEditorStore((state) => {
     const doc = state.documents.find((entry) => entry.id === state.activeDocId);
-    return doc?.assetFiles ?? [];
+    return doc?.assetFiles ?? EMPTY_ASSET_FILES;
   });
   const registerAssetFile = useEditorStore((state) => state.registerAssetFile);
   const setCopyStatus = useEditorStore((state) => state.setCopyStatus);
@@ -40,6 +42,7 @@ export function EditorPane({ markdownValue, onMarkdownChange }: EditorPaneProps)
         <span>Markdown</span>
       </div>
       <CodeMirror
+        key={activeDocId ?? "no-doc"}
         value={markdownValue}
         height="100%"
         extensions={extensions}

@@ -1,7 +1,23 @@
 import { deleteBrowserAssets } from "./browserAssetStorage";
 import { isTauriRuntime } from "../import/tauriRuntime";
 
-const APP_ASSETS_DIR = "read2md-studio/assets";
+const ASSETS_ROOT = "read2md-studio/assets";
+
+export function getDocumentAssetsRelativeDir(docId: string): string {
+  return `${ASSETS_ROOT}/${docId}`;
+}
+
+export function getAssetRelativePath(docId: string, filename: string): string {
+  return `${ASSETS_ROOT}/${docId}/${filename}`;
+}
+
+async function tauriFs() {
+  const { BaseDirectory, mkdir, exists, remove, writeFile, readFile } = await import(
+    "@tauri-apps/plugin-fs"
+  );
+  const baseDir = BaseDirectory.AppData;
+  return { baseDir, mkdir, exists, remove, writeFile, readFile };
+}
 
 export async function getDocumentAssetsDir(docId: string): Promise<string | null> {
   if (!isTauriRuntime()) {
@@ -10,32 +26,50 @@ export async function getDocumentAssetsDir(docId: string): Promise<string | null
 
   const { appDataDir, join } = await import("@tauri-apps/api/path");
   const base = await appDataDir();
-  return join(base, APP_ASSETS_DIR, docId);
+  return join(base, getDocumentAssetsRelativeDir(docId));
 }
 
 export async function ensureDocumentAssetsDir(docId: string): Promise<string | null> {
-  const dir = await getDocumentAssetsDir(docId);
-  if (!dir) {
+  if (!isTauriRuntime()) {
     return null;
   }
 
-  const { mkdir, exists } = await import("@tauri-apps/plugin-fs");
-  if (!(await exists(dir))) {
-    await mkdir(dir, { recursive: true });
+  const relativeDir = getDocumentAssetsRelativeDir(docId);
+  const { baseDir, mkdir, exists } = await tauriFs();
+  if (!(await exists(relativeDir, { baseDir }))) {
+    await mkdir(relativeDir, { baseDir, recursive: true });
   }
-  return dir;
+  return getDocumentAssetsDir(docId);
+}
+
+export async function writeDocumentAssetFile(
+  docId: string,
+  filename: string,
+  bytes: Uint8Array,
+): Promise<void> {
+  const relativePath = getAssetRelativePath(docId, filename);
+  const { baseDir, writeFile } = await tauriFs();
+  await writeFile(relativePath, bytes, { baseDir });
+}
+
+export async function readDocumentAssetFile(docId: string, filename: string): Promise<Uint8Array> {
+  const relativePath = getAssetRelativePath(docId, filename);
+  const { baseDir, readFile } = await tauriFs();
+  return readFile(relativePath, { baseDir });
+}
+
+export async function documentAssetExists(docId: string, filename: string): Promise<boolean> {
+  const relativePath = getAssetRelativePath(docId, filename);
+  const { baseDir, exists } = await tauriFs();
+  return exists(relativePath, { baseDir });
 }
 
 export async function deleteDocumentAssetsDir(docId: string): Promise<void> {
   if (isTauriRuntime()) {
-    const dir = await getDocumentAssetsDir(docId);
-    if (!dir) {
-      return;
-    }
-
-    const { exists, remove } = await import("@tauri-apps/plugin-fs");
-    if (await exists(dir)) {
-      await remove(dir, { recursive: true });
+    const relativeDir = getDocumentAssetsRelativeDir(docId);
+    const { baseDir, exists, remove } = await tauriFs();
+    if (await exists(relativeDir, { baseDir })) {
+      await remove(relativeDir, { baseDir, recursive: true });
     }
     return;
   }
@@ -47,6 +81,11 @@ export async function deleteDocumentAssetsDir(docId: string): Promise<void> {
 
 export async function resolveAssetFileUrl(docId: string, filename: string): Promise<string | null> {
   if (isTauriRuntime()) {
+    const exists = await documentAssetExists(docId, filename);
+    if (!exists) {
+      return null;
+    }
+
     const dir = await getDocumentAssetsDir(docId);
     if (!dir) {
       return null;

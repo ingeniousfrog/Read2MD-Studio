@@ -1,5 +1,5 @@
 import type { LocalizeImagesResult } from "./assetTypes";
-import { ensureDocumentAssetsDir } from "./assetStorage";
+import { ensureDocumentAssetsDir, writeDocumentAssetFile } from "./assetStorage";
 import { saveBrowserAsset } from "./browserAssetStorage";
 import { downloadImageBytes } from "./downloadImage";
 import {
@@ -43,10 +43,7 @@ async function saveLocalizedImage(
     if (!assetsDir) {
       throw new Error("无法创建本地 assets 目录");
     }
-    const { join } = await import("@tauri-apps/api/path");
-    const { writeFile } = await import("@tauri-apps/plugin-fs");
-    const filePath = await join(assetsDir, filename);
-    await writeFile(filePath, bytes);
+    await writeDocumentAssetFile(docId, filename, bytes);
     return;
   }
 

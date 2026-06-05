@@ -1,4 +1,4 @@
-import { getDocumentAssetsDir } from "./assetStorage";
+import { documentAssetExists, readDocumentAssetFile } from "./assetStorage";
 import { readBrowserAssetAsDataUrl } from "./browserAssetStorage";
 import { isTauriRuntime } from "../import/tauriRuntime";
 
@@ -33,19 +33,11 @@ export async function readAssetAsDataUrl(docId: string, filename: string): Promi
     return readBrowserAssetAsDataUrl(docId, filename);
   }
 
-  const dir = await getDocumentAssetsDir(docId);
-  if (!dir) {
+  if (!(await documentAssetExists(docId, filename))) {
     return null;
   }
 
-  const { join } = await import("@tauri-apps/api/path");
-  const { readFile, exists } = await import("@tauri-apps/plugin-fs");
-  const filePath = await join(dir, filename);
-  if (!(await exists(filePath))) {
-    return null;
-  }
-
-  const bytes = await readFile(filePath);
+  const bytes = await readDocumentAssetFile(docId, filename);
   const mime = mimeTypeFromFilename(filename);
   return `data:${mime};base64,${bytesToBase64(bytes)}`;
 }
