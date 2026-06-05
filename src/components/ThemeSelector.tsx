@@ -15,6 +15,7 @@ export function ThemeSelector({ themeId, onThemeChange }: ThemeSelectorProps) {
             {theme.name}
           </option>
         ))}
+        <option value="custom">Custom</option>
       </select>
     </label>
   );

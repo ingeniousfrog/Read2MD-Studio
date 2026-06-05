@@ -2,8 +2,9 @@ import { useState } from "react";
 import { copyHtml } from "../core/copy/copyHtml";
 import { buildWechatOutput } from "../core/platform/wechatAdapter";
 import { renderMarkdown } from "../core/markdown/renderMarkdown";
-import { getThemeById, type ThemeId } from "../core/theme/themes";
+import { getActiveTheme, type ThemeId } from "../core/theme/themes";
 import { useEditorStore } from "../store/editorStore";
+import { ThemeActions } from "./ThemeActions";
 import { ThemeSelector } from "./ThemeSelector";
 
 interface ToolbarProps {
@@ -16,6 +17,8 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
   const copyStatus = useEditorStore((state) => state.copyStatus);
   const statusMessage = useEditorStore((state) => state.statusMessage);
   const warnings = useEditorStore((state) => state.warnings);
+  const customThemeTokens = useEditorStore((state) => state.customThemeTokens);
+  const customThemeName = useEditorStore((state) => state.customThemeName);
   const setCopyStatus = useEditorStore((state) => state.setCopyStatus);
   const setWarnings = useEditorStore((state) => state.setWarnings);
   const [copyDialog, setCopyDialog] = useState<{
@@ -34,7 +37,7 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
       });
       const output = await buildWechatOutput({
         rawHtml: rendered.rawHtml,
-        theme: getThemeById(themeId),
+        theme: getActiveTheme(themeId, customThemeTokens, customThemeName),
         warnings: rendered.warnings,
       });
       const result = await copyHtml(output);
@@ -72,6 +75,7 @@ export function Toolbar({ markdownValue, themeId, onThemeChange }: ToolbarProps)
       </div>
       <div className="toolbar-actions">
         <ThemeSelector themeId={themeId} onThemeChange={onThemeChange} />
+        <ThemeActions themeId={themeId} />
         <button className="copy-button" type="button" onClick={handleCopyWechat} disabled={copyStatus === "copying"}>
           {copyStatus === "copying" ? "Copying..." : "Copy for WeChat"}
         </button>

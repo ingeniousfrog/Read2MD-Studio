@@ -1,17 +1,74 @@
-export type ThemeId = "clean" | "tech" | "wechat-card";
+import { buildCustomTheme } from "./compileTheme";
+import type { ThemeTokenInput } from "./themeTokens";
+
+export type ThemeId = "clean" | "tech" | "wechat-card" | "custom";
 
 export interface ThemeDefinition {
   id: ThemeId;
   name: string;
   description: string;
   css: string;
+  tokens?: ThemeTokenInput;
+  isCustom?: boolean;
 }
+
+const cleanTokens: ThemeTokenInput = {
+  primaryColor: "#176b87",
+  textColor: "#25313f",
+  mutedColor: "#536171",
+  backgroundColor: "#ffffff",
+  headingColor: "#121926",
+  linkColor: "#176b87",
+  borderColor: "#dce3eb",
+  codeBackground: "#eef2f6",
+  blockquoteBackground: "#f4f7fa",
+  fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
+  headingFontWeight: 700,
+  paragraphLineHeight: 1.78,
+  paragraphSpacing: 14,
+  radius: 6,
+};
+
+const techTokens: ThemeTokenInput = {
+  primaryColor: "#168aad",
+  textColor: "#18212f",
+  mutedColor: "#334155",
+  backgroundColor: "#ffffff",
+  headingColor: "#0f172a",
+  linkColor: "#0b7285",
+  borderColor: "#d5e4ea",
+  codeBackground: "#e8f6f9",
+  blockquoteBackground: "#eef9fb",
+  fontFamily: '"Avenir Next", "Segoe UI", sans-serif',
+  headingFontWeight: 700,
+  paragraphLineHeight: 1.72,
+  paragraphSpacing: 14,
+  radius: 6,
+};
+
+const wechatCardTokens: ThemeTokenInput = {
+  primaryColor: "#95633a",
+  textColor: "#2e2a25",
+  mutedColor: "#5c4b3a",
+  backgroundColor: "#ffffff",
+  headingColor: "#2a2118",
+  linkColor: "#8b4d22",
+  borderColor: "#ead8c4",
+  codeBackground: "#f7efe5",
+  blockquoteBackground: "#fbf6ef",
+  fontFamily: '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif',
+  headingFontWeight: 700,
+  paragraphLineHeight: 1.85,
+  paragraphSpacing: 14,
+  radius: 6,
+};
 
 export const themes: ThemeDefinition[] = [
   {
     id: "clean",
     name: "Clean",
     description: "A restrained editorial style for quiet long-form reading.",
+    tokens: cleanTokens,
     css: `
 .r2md-article {
   color: #25313f;
@@ -129,6 +186,7 @@ export const themes: ThemeDefinition[] = [
     id: "tech",
     name: "Tech",
     description: "A precise engineering style with crisp contrast and blue accents.",
+    tokens: techTokens,
     css: `
 .r2md-article {
   color: #18212f;
@@ -239,6 +297,7 @@ export const themes: ThemeDefinition[] = [
     id: "wechat-card",
     name: "WeChat Card",
     description: "A warm card-like article style designed for public account pasting.",
+    tokens: wechatCardTokens,
     css: `
 .r2md-article {
   color: #2e2a25;
@@ -358,5 +417,24 @@ export const themes: ThemeDefinition[] = [
 export const defaultThemeId: ThemeId = "clean";
 
 export function getThemeById(themeId: ThemeId): ThemeDefinition {
+  if (themeId === "custom") {
+    return buildCustomTheme(cleanTokens, "Custom");
+  }
   return themes.find((theme) => theme.id === themeId) ?? themes[0];
+}
+
+export function getActiveTheme(
+  themeId: ThemeId,
+  customTokens: ThemeTokenInput,
+  customName: string,
+): ThemeDefinition {
+  if (themeId === "custom") {
+    return buildCustomTheme(customTokens, customName);
+  }
+  return getThemeById(themeId);
+}
+
+export function getBuiltinThemeTokens(themeId: Exclude<ThemeId, "custom">): ThemeTokenInput {
+  const theme = getThemeById(themeId);
+  return theme.tokens ?? cleanTokens;
 }
