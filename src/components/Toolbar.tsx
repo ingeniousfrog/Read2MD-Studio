@@ -4,6 +4,7 @@ import { copyHtml } from "../core/copy/copyHtml";
 import { buildWechatOutput } from "../core/platform/wechatAdapter";
 import { renderMarkdown } from "../core/markdown/renderMarkdown";
 import { getActiveTheme } from "../core/theme/themes";
+import { useAiStore } from "../store/aiStore";
 import { useEditorStore } from "../store/editorStore";
 
 interface ToolbarProps {
@@ -20,6 +21,7 @@ export function Toolbar({ markdownValue }: ToolbarProps) {
   const warnings = useEditorStore((state) => state.warnings);
   const setCopyStatus = useEditorStore((state) => state.setCopyStatus);
   const setWarnings = useEditorStore((state) => state.setWarnings);
+  const openSettings = useAiStore((state) => state.openSettings);
 
   const [copyDialog, setCopyDialog] = useState<{
     title: string;
@@ -69,37 +71,47 @@ export function Toolbar({ markdownValue }: ToolbarProps) {
   };
 
   return (
-    <header className="toolbar">
-      <div className="brand-block">
+    <header className="toolbar toolbar-app">
+      <div className="toolbar-brand">
         <div className="brand-logo-wrap" aria-hidden>
           <BrandLogo />
         </div>
-        <div>
-          <p className="eyebrow">
-            <BrandWordmark />
-          </p>
-          <h1>Markdown 发布工作台</h1>
+        <div className="toolbar-brand-text">
+          <BrandWordmark />
+          <span className="toolbar-subtitle">Markdown 发布工作台</span>
         </div>
       </div>
-      <div className="toolbar-actions">
-        <button className="copy-button" type="button" onClick={handleCopyWechat} disabled={copyStatus === "copying"}>
+
+      <div className="toolbar-center">
+        {!copyDialog && statusMessage && (
+          <span className={`toolbar-status status-${copyStatus}`} role="status">
+            {statusMessage}
+          </span>
+        )}
+        {!copyDialog && warnings.length > 0 && (
+          <span className="toolbar-warning">{warnings[0]}</span>
+        )}
+      </div>
+
+      <div className="toolbar-actions toolbar-actions-compact">
+        <button
+          type="button"
+          className="toolbar-btn toolbar-btn-ghost"
+          title="设置"
+          onClick={openSettings}
+        >
+          设置
+        </button>
+        <button
+          className="toolbar-btn toolbar-btn-primary"
+          type="button"
+          onClick={handleCopyWechat}
+          disabled={copyStatus === "copying"}
+        >
           {copyStatus === "copying" ? "复制中…" : "复制到公众号"}
         </button>
       </div>
-      {!copyDialog && (
-        <>
-          <div className={`status-line status-${copyStatus}`} role="status">
-            {statusMessage}
-          </div>
-          {warnings.length > 0 && (
-            <div className="warning-line">
-              {warnings.map((warning) => (
-                <span key={warning}>{warning}</span>
-              ))}
-            </div>
-          )}
-        </>
-      )}
+
       {copyDialog && (
         <div className="copy-dialog-backdrop" role="presentation">
           <div className={`copy-dialog copy-dialog-${copyDialog.tone}`} role="alertdialog" aria-modal="true">

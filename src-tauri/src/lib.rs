@@ -1,3 +1,5 @@
+mod codex;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -13,6 +15,13 @@ pub fn run() {
       }
       Ok(())
     })
+    .invoke_handler(tauri::generate_handler![
+      codex::codex_detect,
+      codex::codex_login_status,
+      codex::codex_login,
+      codex::codex_logout,
+      codex::codex_exec,
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

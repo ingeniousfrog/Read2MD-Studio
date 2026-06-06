@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { AiModal } from "./components/AiModal";
 import { DocumentList } from "./components/DocumentList";
 import { EditorPane } from "./components/EditorPane";
 import { PreviewPane } from "./components/PreviewPane";
+import { SettingsModal } from "./components/SettingsModal";
 import { Toolbar } from "./components/Toolbar";
 import { WorkspaceSplit } from "./components/WorkspaceSplit";
 import { resolveMarkdownAssetUrls } from "./core/assets/resolveAssets";
@@ -28,7 +30,6 @@ function App() {
   const customThemeName = useEditorStore((state) => state.customThemeName);
   const setMarkdown = useEditorStore((state) => state.setMarkdown);
   const setThemeId = useEditorStore((state) => state.setThemeId);
-
   const [previewMarkdown, setPreviewMarkdown] = useState(markdown);
 
   useEffect(() => {
@@ -80,6 +81,8 @@ function App() {
           }
         />
       </main>
+      <AiModal />
+      <SettingsModal />
     </div>
   );
 }
