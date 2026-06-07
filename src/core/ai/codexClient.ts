@@ -25,6 +25,65 @@ export interface CodexExecResult {
   error?: string;
 }
 
+export interface CodexRateWindow {
+  usedPercent: number;
+  remainingPercent: number;
+  windowMinutes?: number;
+  resetsAt?: number;
+}
+
+export interface CodexUsageResult {
+  ok: boolean;
+  planType?: string;
+  accountEmail?: string;
+  session?: CodexRateWindow;
+  weekly?: CodexRateWindow;
+  creditsBalance?: number;
+  creditsUnlimited: boolean;
+  message: string;
+}
+
+export interface CodexUsageInspectResult {
+  authPath: string;
+  codexHome: string;
+  authFileExists: boolean;
+  topLevelKeys: string[];
+  authMode?: string;
+  hasOpenaiApiKey: boolean;
+  tokenFields: string[];
+  hasAccessToken: boolean;
+  hasRefreshToken: boolean;
+  hasIdToken: boolean;
+  accountIdSource?: string;
+  accountIdPreview?: string;
+  accountEmail?: string;
+  jwtClaimKeys: string[];
+  parseError?: string;
+}
+
+function formatUsageInspectLines(inspect: CodexUsageInspectResult): string[] {
+  const lines = [
+    `[usage debug] auth_path=${inspect.authPath}`,
+    `[usage debug] codex_home=${inspect.codexHome}`,
+    `[usage debug] auth_file_exists=${inspect.authFileExists}`,
+    `[usage debug] top_level_keys=${inspect.topLevelKeys.join(", ") || "—"}`,
+    `[usage debug] auth_mode=${inspect.authMode ?? "—"}`,
+    `[usage debug] has_openai_api_key=${inspect.hasOpenaiApiKey}`,
+    `[usage debug] token_fields=${inspect.tokenFields.join(", ") || "—"}`,
+    `[usage debug] has_access_token=${inspect.hasAccessToken}`,
+    `[usage debug] has_refresh_token=${inspect.hasRefreshToken}`,
+    `[usage debug] has_id_token=${inspect.hasIdToken}`,
+    `[usage debug] account_id_source=${inspect.accountIdSource ?? "—"}`,
+    `[usage debug] account_id_preview=${inspect.accountIdPreview ?? "—"}`,
+    `[usage debug] account_email=${inspect.accountEmail ?? "—"}`,
+    `[usage debug] jwt_claim_keys=${inspect.jwtClaimKeys.slice(0, 12).join(", ") || "—"}`,
+  ];
+  if (inspect.parseError) {
+    lines.push(`[usage debug] parse_error=${inspect.parseError}`);
+  }
+  return lines;
+}
+
 function assertDesktop(): void {
   if (!isTauriRuntime()) {
     throw new Error(DESKTOP_ONLY_MESSAGE);
@@ -99,6 +158,20 @@ export async function codexExec(input: {
       await unlisten();
     }
   }
+}
+
+export async function codexUsage(): Promise<CodexUsageResult> {
+  assertDesktop();
+  return invoke<CodexUsageResult>("codex_usage");
+}
+
+export async function codexUsageInspect(): Promise<CodexUsageInspectResult> {
+  assertDesktop();
+  return invoke<CodexUsageInspectResult>("codex_usage_inspect");
+}
+
+export function formatCodexUsageInspectLog(inspect: CodexUsageInspectResult): string[] {
+  return formatUsageInspectLines(inspect);
 }
 
 export function getDesktopOnlyMessage(): string {

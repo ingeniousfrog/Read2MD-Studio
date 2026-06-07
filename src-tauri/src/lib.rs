@@ -1,4 +1,5 @@
 mod codex;
+mod codex_usage;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -6,13 +7,15 @@ pub fn run() {
     .plugin(tauri_plugin_fs::init())
     .plugin(tauri_plugin_http::init())
     .setup(|app| {
-      if cfg!(debug_assertions) {
-        app.handle().plugin(
-          tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build(),
-        )?;
-      }
+      app.handle().plugin(
+        tauri_plugin_log::Builder::default()
+          .level(if cfg!(debug_assertions) {
+            log::LevelFilter::Debug
+          } else {
+            log::LevelFilter::Info
+          })
+          .build(),
+      )?;
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
@@ -21,6 +24,8 @@ pub fn run() {
       codex::codex_login,
       codex::codex_logout,
       codex::codex_exec,
+      codex_usage::codex_usage,
+      codex_usage::codex_usage_inspect,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

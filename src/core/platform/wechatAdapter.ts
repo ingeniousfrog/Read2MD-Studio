@@ -1,14 +1,16 @@
 import DOMPurify from "dompurify";
 import juice from "juice";
+import i18n from "../../i18n";
 import { inlineR2mdAssetImages } from "../assets/inlineAssets";
+import { rasterizeMermaidInHtml } from "../markdown/rasterizeMermaid";
 import { applyThemeHtml } from "../theme/applyTheme";
 import { injectH2Numbering, stripH2PseudoCss, themeUsesH2Numbering } from "../theme/h2Numbering";
 import { extractPlainTextFromHtml, type PlatformAdapterInput, type PlatformOutput } from "./commonAdapter";
 
-const formulaCompatibilityNote =
-  "公式已转换为 SVG 矢量图，可直接粘贴到公众号；请避免在公众号后台二次编辑公式，否则可能丢失。";
-const imageCompatibilityWarning = "检测到外链图片，已尝试转为内嵌图片；若仍插入失败，后续需要接入图片上传或素材库。";
-const imageFetchFailureWarning = "有外链图片因浏览器跨域限制无法转为内嵌图片，复制后可能需要在公众号后台重新上传。";
+const formulaCompatibilityNote = () => i18n.t("warnings.formulaNote");
+const mermaidCompatibilityNote = () => i18n.t("warnings.mermaidNote");
+const imageCompatibilityWarning = () => i18n.t("warnings.externalImage");
+const imageFetchFailureWarning = () => i18n.t("warnings.imageFetchFailed");
 
 export async function buildWechatOutput(input: PlatformAdapterInput): Promise<PlatformOutput> {
   const themed = applyThemeHtml({
@@ -18,19 +20,28 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
   const warnings = [...(input.warnings ?? [])];
   const hasFormula = /<svg[\s>]/i.test(themed.html);
   const hasExternalImage = /<img\s[^>]*src=["']https?:\/\//i.test(themed.html);
+  const hasMermaid = /r2md-mermaid-pending/i.test(themed.html);
 
   if (hasFormula) {
-    warnings.push(formulaCompatibilityNote);
+    warnings.push(formulaCompatibilityNote());
   }
   if (hasExternalImage) {
-    warnings.push(imageCompatibilityWarning);
+    warnings.push(imageCompatibilityWarning());
+  }
+
+  const mermaidResult = await rasterizeMermaidInHtml(themed.html);
+  if (mermaidResult.warnings.length > 0) {
+    warnings.push(...mermaidResult.warnings);
+  }
+  if (hasMermaid && mermaidResult.warnings.length === 0) {
+    warnings.push(mermaidCompatibilityNote());
   }
 
   // Pull formula blocks out before inlining CSS. juice relies on cheerio, which
   // lowercases attribute names (viewBox -> viewbox) and breaks SVG rendering.
   // MathJax may emit nested <svg> nodes (e.g. underbrace labels); a naive
   // <svg>...</svg> regex would split them and drop inner content on restore.
-  const { html: htmlWithoutSvg, svgMap } = extractFormulaPlaceholders(themed.html);
+  const { html: htmlWithoutSvg, svgMap } = extractFormulaPlaceholders(mermaidResult.html);
   const usesH2Numbering = themeUsesH2Numbering(input.theme);
   const badgeColor = input.theme.tokens?.primaryColor ?? "#95633a";
   const htmlForInline = usesH2Numbering
@@ -46,7 +57,7 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
       preserveImportant: true,
     });
   } catch (error) {
-    warnings.push(error instanceof Error ? error.message : "Failed to inline theme CSS.");
+    warnings.push(error instanceof Error ? error.message : i18n.t("warnings.inlineCssFailed"));
     inlineHtml = htmlForInline;
   }
 
@@ -57,9 +68,9 @@ export async function buildWechatOutput(input: PlatformAdapterInput): Promise<Pl
   const localizedHtml = await inlineR2mdAssetImages(sanitizedHtml, input.docId ?? null);
   const imageResult = await inlineExternalImages(localizedHtml);
   if (imageResult.failedCount > 0) {
-    warnings.push(imageFetchFailureWarning);
+    warnings.push(imageFetchFailureWarning());
     imageResult.failedSources.slice(0, 3).forEach((source) => {
-      warnings.push(`无法内嵌图片：${source}`);
+      warnings.push(i18n.t("warnings.imageInlineFailed", { source }));
     });
   }
 

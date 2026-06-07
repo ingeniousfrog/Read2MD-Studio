@@ -40,9 +40,12 @@ export const ROLEPLAY_PRESETS: RoleplayPreset[] = [
   },
 ];
 
+export type AiCapabilityGroup = "understand" | "generate";
+
 export interface AiActionDefinition {
   id: AiActionId;
   capability: "academic" | "mermaid" | "roleplay" | "cowork";
+  group: AiCapabilityGroup;
   label: string;
   description: string;
 }
@@ -51,66 +54,77 @@ export const AI_ACTIONS: AiActionDefinition[] = [
   {
     id: "academic:structure",
     capability: "academic",
+    group: "understand",
     label: "结构化整理",
     description: "将长文整理为适合发布的结构化 Markdown（标题层级、段落、列表）。",
   },
   {
     id: "academic:summarize",
     capability: "academic",
+    group: "understand",
     label: "长文摘要",
     description: "生成 Executive Summary + 关键要点列表，保留原文核心信息。",
   },
   {
     id: "academic:toc",
     capability: "academic",
+    group: "understand",
     label: "生成目录",
     description: "根据内容生成 H1–H6 目录结构，并适度调整标题层级。",
   },
   {
     id: "mermaid:flowchart",
     capability: "mermaid",
+    group: "generate",
     label: "流程图",
     description: "将核心流程转为 Mermaid flowchart 代码块。",
   },
   {
     id: "mermaid:sequence",
     capability: "mermaid",
+    group: "generate",
     label: "时序图",
     description: "将交互/步骤转为 Mermaid sequenceDiagram 代码块。",
   },
   {
     id: "mermaid:mindmap",
     capability: "mermaid",
+    group: "generate",
     label: "思维导图",
     description: "将知识结构转为 Mermaid mindmap 代码块。",
   },
   {
     id: "roleplay:academic",
     capability: "roleplay",
+    group: "generate",
     label: "学术严谨",
     description: "按学术风格改写全文。",
   },
   {
     id: "roleplay:wechat",
     capability: "roleplay",
+    group: "generate",
     label: "公众号·轻松语气",
     description: "按公众号轻松语气改写全文，口语化、段落短、易读。",
   },
   {
     id: "roleplay:xiaohongshu",
     capability: "roleplay",
+    group: "generate",
     label: "小红书种草",
     description: "按小红书风格改写全文。",
   },
   {
     id: "roleplay:tech-evangelist",
     capability: "roleplay",
+    group: "generate",
     label: "技术布道",
     description: "按技术布道风格改写全文。",
   },
   {
     id: "roleplay:custom",
     capability: "roleplay",
+    group: "generate",
     label: "自定义风格",
     description: "按自定义风格说明改写全文。",
   },
@@ -240,6 +254,41 @@ export function getCoworkStepLabels(): { actionId: AiActionId; label: string }[]
       actionId,
       label: def?.label ?? actionId,
     };
+  });
+}
+
+export const AI_MAIN_GROUPS: {
+  id: "understand" | "generate" | "cowork";
+  label: string;
+}[] = [
+  { id: "understand", label: "理解" },
+  { id: "generate", label: "生成" },
+  { id: "cowork", label: "Cowork 流水线" },
+];
+
+export const AI_CAPABILITY_SECTIONS: Record<
+  Exclude<(typeof AI_MAIN_GROUPS)[number]["id"], "cowork">,
+  { capability: AiActionDefinition["capability"]; label: string }[]
+> = {
+  understand: [{ capability: "academic", label: "论文结构化" }],
+  generate: [
+    { capability: "mermaid", label: "Mermaid 图解" },
+    { capability: "roleplay", label: "风格改写" },
+  ],
+};
+
+export function getActionsForMainGroup(
+  group: "understand" | "generate",
+  capability?: AiActionDefinition["capability"],
+): AiActionDefinition[] {
+  return AI_ACTIONS.filter((action) => {
+    if (action.group !== group) {
+      return false;
+    }
+    if (capability && action.capability !== capability) {
+      return false;
+    }
+    return true;
   });
 }
 

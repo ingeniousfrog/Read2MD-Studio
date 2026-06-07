@@ -1,3 +1,5 @@
+import i18n from "../../i18n";
+
 export function formatCodexProgressLine(line: string): string | null {
   const trimmed = line.trim();
   if (!trimmed) {
@@ -12,16 +14,16 @@ export function formatCodexProgressLine(line: string): string | null {
     };
 
     if (json.type === "thread.started") {
-      return "已连接 Codex，准备处理…";
+      return i18n.t("progress.threadStarted");
     }
     if (json.type === "turn.started") {
-      return "模型开始生成内容…";
+      return i18n.t("progress.turnStarted");
     }
     if (json.type === "turn.completed") {
-      return "本回合生成完成。";
+      return i18n.t("progress.turnCompleted");
     }
     if (json.type === "turn.failed") {
-      return json.error?.message ?? "本回合执行失败。";
+      return json.error?.message ?? i18n.t("progress.turnFailed");
     }
     if (json.type === "error" && json.message) {
       return json.message;

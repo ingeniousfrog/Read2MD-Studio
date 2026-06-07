@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorView } from "@codemirror/view";
@@ -13,6 +14,7 @@ interface EditorPaneProps {
 }
 
 export function EditorPane({ markdownValue, onMarkdownChange }: EditorPaneProps) {
+  const { t } = useTranslation();
   const activeDocId = useEditorStore((state) => state.activeDocId);
   const assetFiles = useEditorStore((state) => {
     const doc = state.documents.find((entry) => entry.id === state.activeDocId);
@@ -38,9 +40,9 @@ export function EditorPane({ markdownValue, onMarkdownChange }: EditorPaneProps)
   );
 
   return (
-    <section className="pane editor-pane" aria-label="Markdown editor">
+    <section className="pane editor-pane" aria-label={t("common.markdown")}>
       <div className="pane-header">
-        <span>Markdown</span>
+        <span>{t("common.markdown")}</span>
       </div>
       <div className="pane-body">
         <CodeMirror

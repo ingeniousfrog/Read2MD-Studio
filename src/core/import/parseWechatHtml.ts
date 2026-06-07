@@ -54,6 +54,19 @@ function promoteLargeFontHeadings(root: ParentNode): void {
       continue;
     }
 
+    if (text.length < 4) {
+      continue;
+    }
+
+    if (fontSize >= 36 && text.length <= 8) {
+      continue;
+    }
+
+    const ancestorStyle = span.parentElement?.closest("[style]")?.getAttribute("style") ?? "";
+    if (/transform\s*:/i.test(ancestorStyle) || /display\s*:\s*flex/i.test(ancestorStyle)) {
+      continue;
+    }
+
     if (span.parentElement?.tagName === "H2") {
       continue;
     }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { DocumentSource } from "../core/document/documentTypes";
 import { useEditorStore } from "../store/editorStore";
 import { ImportDialog } from "./ImportDialog";
@@ -21,17 +22,18 @@ function formatTimestamp(value: string): string {
   return `${month}-${day} ${hours}:${minutes}`;
 }
 
-function sourceLabel(source: DocumentSource): string {
+function sourceLabel(source: DocumentSource, t: (key: string) => string): string {
   if (source === "wechat") {
-    return "微信";
+    return t("document.sourceWechat");
   }
   if (source === "html") {
-    return "网页";
+    return t("document.sourceHtml");
   }
-  return "新建";
+  return t("document.sourceBlank");
 }
 
 export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps) {
+  const { t } = useTranslation();
   const documents = useEditorStore((state) => state.documents);
   const activeDocId = useEditorStore((state) => state.activeDocId);
   const createDocument = useEditorStore((state) => state.createDocument);
@@ -91,15 +93,15 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
         <button
           type="button"
           className="sidebar-collapse-toggle"
-          aria-label="展开文档列表"
+          aria-label={t("document.expandList")}
           onClick={onToggleCollapse}
         >
           »
         </button>
-        <button type="button" className="sidebar-icon-button" title="新建" onClick={createDocument}>
+        <button type="button" className="sidebar-icon-button" title={t("document.newDoc")} onClick={createDocument}>
           +
         </button>
-        <button type="button" className="sidebar-icon-button" title="导入 URL" onClick={() => setImportOpen(true)}>
+        <button type="button" className="sidebar-icon-button" title={t("document.importUrl")} onClick={() => setImportOpen(true)}>
           ↓
         </button>
         {importOpen && (
@@ -112,13 +114,13 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
   return (
     <aside className="document-list-pane" aria-label="Document list">
       <div className="document-list-header">
-        <h2>我的文档</h2>
+        <h2>{t("document.myDocuments")}</h2>
         <div className="document-list-header-actions">
           <span>{documents.length}</span>
           <button
             type="button"
             className="sidebar-collapse-toggle"
-            aria-label="收起文档列表"
+            aria-label={t("document.collapseList")}
             onClick={onToggleCollapse}
           >
             «
@@ -128,18 +130,18 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
 
       <div className="document-list-actions">
         <button type="button" className="doc-action-primary" onClick={createDocument}>
-          + 新建
+          {t("document.newDocButton")}
         </button>
         <button type="button" className="doc-action-secondary" onClick={() => setImportOpen(true)}>
-          导入 URL
+          {t("document.importUrl")}
         </button>
       </div>
 
       <div className="document-list-scroll">
         {documents.length === 0 ? (
           <div className="document-list-empty">
-            <p>还没有文档</p>
-            <p>点击「新建」或「导入 URL」开始写作。</p>
+            <p>{t("document.emptyTitle")}</p>
+            <p>{t("document.emptyHint")}</p>
           </div>
         ) : (
           <ul className="document-list">
@@ -162,7 +164,7 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
                       autoFocus
                     />
                     <button type="button" onClick={commitRename}>
-                      确定
+                      {t("document.confirm")}
                     </button>
                   </div>
                 ) : (
@@ -182,14 +184,14 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
                     >
                       <span className="document-list-title">{doc.title}</span>
                       <span className="document-list-meta">
-                        <span className="document-source-badge">{sourceLabel(doc.source)}</span>
+                        <span className="document-source-badge">{sourceLabel(doc.source, t)}</span>
                         {formatTimestamp(doc.updatedAt)}
                       </span>
                     </button>
                     <button
                       type="button"
                       className="document-list-item-menu-trigger"
-                      aria-label={`文档操作：${doc.title}`}
+                      aria-label={t("document.docActions", { title: doc.title })}
                       aria-expanded={openMenuId === doc.id}
                       aria-haspopup="menu"
                       onClick={(event) => {
@@ -206,7 +208,7 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
                           role="menuitem"
                           onClick={() => startRename(doc.id, doc.title)}
                         >
-                          重命名
+                          {t("document.rename")}
                         </button>
                         <button
                           type="button"
@@ -217,7 +219,7 @@ export function DocumentList({ collapsed, onToggleCollapse }: DocumentListProps)
                             removeDocument(doc.id);
                           }}
                         >
-                          删除
+                          {t("document.delete")}
                         </button>
                       </div>
                     )}

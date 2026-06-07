@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { HeadingLevelsEditor } from "./HeadingLevelsEditor";
 import { headingStyleLabel } from "../core/theme/compileTheme";
 import { defaultCustomTokens, type HeadingStyle, type ThemeTokenInput } from "../core/theme/themeTokens";
@@ -29,14 +30,14 @@ const headingStyleOptions: { value: HeadingStyle; label: string }[] = [
 
 type ThemeTab = "global" | "headings" | "body" | "formula" | "code" | "image" | "quote";
 
-const themeTabs: { id: ThemeTab; label: string }[] = [
-  { id: "global", label: "全局" },
-  { id: "headings", label: "标题" },
-  { id: "body", label: "正文" },
-  { id: "formula", label: "公式" },
-  { id: "code", label: "代码" },
-  { id: "image", label: "图片" },
-  { id: "quote", label: "引用" },
+const themeTabs: { id: ThemeTab; labelKey: string }[] = [
+  { id: "global", labelKey: "theme.tabs.global" },
+  { id: "headings", labelKey: "theme.tabs.headings" },
+  { id: "body", labelKey: "theme.tabs.body" },
+  { id: "formula", labelKey: "theme.tabs.formula" },
+  { id: "code", labelKey: "theme.tabs.code" },
+  { id: "image", labelKey: "theme.tabs.image" },
+  { id: "quote", labelKey: "theme.tabs.quote" },
 ];
 
 interface ThemePanelProps {
@@ -106,6 +107,7 @@ function NumberField({
 }
 
 export function ThemePanel({ themeId, onThemeChange }: ThemePanelProps) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<ThemeTab>("global");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -414,7 +416,7 @@ export function ThemePanel({ themeId, onThemeChange }: ThemePanelProps) {
               className={`theme-tab${activeTab === tab.id ? " theme-tab-active" : ""}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           ))}
         </div>

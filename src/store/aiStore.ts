@@ -5,10 +5,16 @@ import {
   codexLogin,
   codexLoginStatus,
   codexLogout,
+  codexUsage,
+  codexUsageInspect,
+  formatCodexUsageInspectLog,
   isAiAvailable,
+  type CodexUsageResult,
 } from "../core/ai/codexClient";
+import { translateActionLabel } from "../core/ai/i18nActions";
 import { formatCodexProgressLine } from "../core/ai/parseProgress";
 import { COWORK_PIPELINE, getActionDefinition } from "../core/ai/presets";
+import i18n from "../i18n";
 import type {
   AiActionId,
   AiActionResult,
@@ -52,6 +58,8 @@ interface AiState {
   isSettingsOpen: boolean;
   isAiPanelOpen: boolean;
   statusMessage: string;
+  usage: CodexUsageResult | null;
+  usageLoading: boolean;
   setCodexPath: (path: string) => void;
   setCapabilityModel: (capability: AiCapabilityId, model: string) => void;
   setCustomStyle: (style: string) => void;
@@ -60,6 +68,7 @@ interface AiState {
   openAiPanel: () => void;
   closeAiPanel: () => void;
   refreshLoginStatus: () => Promise<void>;
+  refreshUsage: () => Promise<void>;
   detectCodexPath: () => Promise<void>;
   startLogin: () => Promise<void>;
   startLogout: () => Promise<void>;
@@ -215,7 +224,7 @@ function toResultRecord(result: AiActionResult, label: string): AiResultRecord {
 }
 
 function actionLabel(actionId: AiActionId): string {
-  return getActionDefinition(actionId)?.label ?? actionId;
+  return translateActionLabel(i18n.t.bind(i18n), actionId);
 }
 
 const persisted = readPersistedSettings();
@@ -237,6 +246,8 @@ export const useAiStore = create<AiState>((set, get) => ({
   isSettingsOpen: false,
   isAiPanelOpen: false,
   statusMessage: "",
+  usage: null,
+  usageLoading: false,
 
   setCodexPath: (path) => {
     const state = get();
@@ -275,6 +286,7 @@ export const useAiStore = create<AiState>((set, get) => ({
   openSettings: () => {
     set({ isSettingsOpen: true });
     void get().refreshLoginStatus();
+    void get().refreshUsage();
   },
 
   closeSettings: () => set({ isSettingsOpen: false }),
@@ -293,7 +305,7 @@ export const useAiStore = create<AiState>((set, get) => ({
     if (!isAiAvailable()) {
       set({
         loggedIn: false,
-        loginDetail: "Web 版不支持 Codex 登录，请使用桌面版。",
+        loginDetail: i18n.t("ai.store.webNoLogin"),
       });
       return;
     }
@@ -304,17 +316,64 @@ export const useAiStore = create<AiState>((set, get) => ({
         loggedIn: status.loggedIn,
         loginDetail: status.detail,
       });
+      if (status.loggedIn) {
+        void get().refreshUsage();
+      } else {
+        set({ usage: null });
+      }
     } catch (error) {
       set({
         loggedIn: false,
-        loginDetail: error instanceof Error ? error.message : "无法读取登录状态。",
+        loginDetail: error instanceof Error ? error.message : i18n.t("ai.store.cannotReadLogin"),
+        usage: null,
       });
+    }
+  },
+
+  refreshUsage: async () => {
+    if (!isAiAvailable() || !get().loggedIn) {
+      set({ usage: null, usageLoading: false });
+      return;
+    }
+
+    set({ usageLoading: true });
+    try {
+      const usage = await codexUsage();
+      if (!usage.ok) {
+        const inspect = await codexUsageInspect();
+        const debugLines = formatCodexUsageInspectLog(inspect);
+        console.warn("[codex usage]", usage.message, inspect);
+        set((state) => ({
+          usage,
+          usageLoading: false,
+          loginLog: [...state.loginLog, `[usage] ${usage.message}`, ...debugLines],
+        }));
+        return;
+      }
+      set({ usage, usageLoading: false });
+    } catch (error) {
+      console.warn("[codex usage] invoke failed", error);
+      try {
+        const inspect = await codexUsageInspect();
+        const debugLines = formatCodexUsageInspectLog(inspect);
+        set((state) => ({
+          usage: null,
+          usageLoading: false,
+          loginLog: [
+            ...state.loginLog,
+            `[usage] ${error instanceof Error ? error.message : i18n.t("ai.store.cannotReadUsage")}`,
+            ...debugLines,
+          ],
+        }));
+      } catch {
+        set({ usage: null, usageLoading: false });
+      }
     }
   },
 
   detectCodexPath: async () => {
     if (!isAiAvailable()) {
-      set({ statusMessage: "仅桌面端可自动探测 Codex。" });
+      set({ statusMessage: i18n.t("ai.store.desktopDetectOnly") });
       return;
     }
 
@@ -322,24 +381,24 @@ export const useAiStore = create<AiState>((set, get) => ({
       const result = await codexDetect(get().codexPath || undefined);
       if (result.found) {
         get().setCodexPath(result.path);
-        set({ statusMessage: `已检测到 Codex：${result.path}` });
+        set({ statusMessage: i18n.t("ai.store.detectedCodex", { path: result.path }) });
       } else {
         set({ statusMessage: result.path });
       }
     } catch (error) {
       set({
-        statusMessage: error instanceof Error ? error.message : "探测 Codex 失败。",
+        statusMessage: error instanceof Error ? error.message : i18n.t("ai.store.detectFailed"),
       });
     }
   },
 
   startLogin: async () => {
     if (!isAiAvailable()) {
-      set({ statusMessage: "仅桌面端支持 Codex 登录。" });
+      set({ statusMessage: i18n.t("ai.store.desktopLoginOnly") });
       return;
     }
 
-    set({ loginLog: [], statusMessage: "正在启动 Codex 登录…" });
+    set({ loginLog: [], statusMessage: i18n.t("ai.store.startingLogin") });
     try {
       const result = await codexLogin(get().codexPath || undefined, (line) => {
         set((state) => ({ loginLog: [...state.loginLog, line] }));
@@ -348,26 +407,29 @@ export const useAiStore = create<AiState>((set, get) => ({
       set({
         statusMessage: result.message,
       });
+      if (result.ok) {
+        void get().refreshUsage();
+      }
     } catch (error) {
       set({
-        statusMessage: error instanceof Error ? error.message : "Codex 登录失败。",
+        statusMessage: error instanceof Error ? error.message : i18n.t("ai.store.loginFailed"),
       });
     }
   },
 
   startLogout: async () => {
     if (!isAiAvailable()) {
-      set({ statusMessage: "仅桌面端支持退出登录。" });
+      set({ statusMessage: i18n.t("ai.store.desktopLogoutOnly") });
       return;
     }
 
     try {
       const result = await codexLogout(get().codexPath || undefined);
       await get().refreshLoginStatus();
-      set({ statusMessage: result.message });
+      set({ statusMessage: result.message, usage: null });
     } catch (error) {
       set({
-        statusMessage: error instanceof Error ? error.message : "退出登录失败。",
+        statusMessage: error instanceof Error ? error.message : i18n.t("ai.store.logoutFailed"),
       });
     }
   },
@@ -381,14 +443,14 @@ export const useAiStore = create<AiState>((set, get) => ({
         ok: false,
         markdown: "",
         actionId,
-        error: "Codex 未登录或会话已过期，请先在设置中重新登录。",
+        error: i18n.t("ai.store.notLoggedInRun"),
       };
       const record = toResultRecord(result, label);
       set({
         lastResult: result,
         resultHistory: [record, ...state.resultHistory].slice(0, 30),
         selectedResultId: record.id,
-        statusMessage: result.error ?? "AI 处理失败",
+        statusMessage: result.error ?? i18n.t("ai.store.aiFailed"),
       });
       return result;
     }
@@ -396,8 +458,8 @@ export const useAiStore = create<AiState>((set, get) => ({
     set({
       running: true,
       runningActionId: actionId,
-      progressLog: ["正在启动 Codex…"],
-      statusMessage: `AI 正在处理：${label}`,
+      progressLog: [i18n.t("ai.store.startingCodex")],
+      statusMessage: i18n.t("ai.store.aiProcessing", { label }),
     });
 
     const result = await runAiAction(actionId, {
@@ -423,7 +485,7 @@ export const useAiStore = create<AiState>((set, get) => ({
       lastResult: result,
       resultHistory: [record, ...get().resultHistory].slice(0, 30),
       selectedResultId: record.id,
-      statusMessage: result.ok ? `AI 处理完成：${label}` : (result.error ?? "AI 处理失败"),
+      statusMessage: result.ok ? i18n.t("ai.store.aiDone", { label }) : (result.error ?? i18n.t("ai.store.aiFailed")),
     });
 
     return result;
@@ -436,7 +498,7 @@ export const useAiStore = create<AiState>((set, get) => ({
     set({
       ...withPersistedCoworkSteps(createDefaultCoworkSteps()),
       progressLog: [],
-      statusMessage: "已恢复默认 Cowork 流水线",
+      statusMessage: i18n.t("ai.store.coworkReset"),
     });
   },
 
@@ -457,21 +519,21 @@ export const useAiStore = create<AiState>((set, get) => ({
     );
     set({
       ...withPersistedCoworkSteps(steps),
-      statusMessage: `已更新步骤：${definition?.label ?? actionId}`,
+      statusMessage: i18n.t("ai.store.coworkUpdated", { label: definition?.label ?? actionId }),
     });
   },
 
   removeCoworkStep: (stepId) => {
     const steps = get().coworkSteps;
     if (steps.length <= 1) {
-      set({ statusMessage: "流水线至少保留一个步骤。" });
+      set({ statusMessage: i18n.t("ai.store.coworkMinSteps") });
       return;
     }
 
     const next = steps.filter((step) => step.id !== stepId);
     set({
       ...withPersistedCoworkSteps(next),
-      statusMessage: "已删除步骤",
+      statusMessage: i18n.t("ai.store.coworkDeleted"),
     });
   },
 
@@ -491,7 +553,8 @@ export const useAiStore = create<AiState>((set, get) => ({
     steps.splice(targetIndex, 0, item);
     set({
       ...withPersistedCoworkSteps(steps),
-      statusMessage: direction === "up" ? "步骤已上移" : "步骤已下移",
+      statusMessage:
+        direction === "up" ? i18n.t("ai.store.coworkMovedUp") : i18n.t("ai.store.coworkMovedDown"),
     });
   },
 
@@ -500,7 +563,7 @@ export const useAiStore = create<AiState>((set, get) => ({
     const steps = [...get().coworkSteps, createCoworkStepFromAction(actionId)];
     set({
       ...withPersistedCoworkSteps(steps),
-      statusMessage: `已添加步骤：${definition?.label ?? actionId}`,
+      statusMessage: i18n.t("ai.store.coworkAdded", { label: definition?.label ?? actionId }),
     });
   },
 
@@ -516,9 +579,9 @@ export const useAiStore = create<AiState>((set, get) => ({
         ok: false,
         markdown: "",
         actionId: step.actionId,
-        error: "Codex 未登录或会话已过期，请先在设置中重新登录。",
+        error: i18n.t("ai.store.notLoggedInRun"),
       };
-      const record = toResultRecord(result, `Cowork · ${step.label}`);
+      const record = toResultRecord(result, i18n.t("ai.store.coworkStepResult", { label: step.label }));
       set({
         lastResult: result,
         resultHistory: [record, ...state.resultHistory].slice(0, 30),
@@ -526,7 +589,7 @@ export const useAiStore = create<AiState>((set, get) => ({
         coworkSteps: state.coworkSteps.map((entry) =>
           entry.id === stepId ? { ...entry, status: "error", error: result.error } : entry,
         ),
-        statusMessage: result.error ?? "Cowork 步骤失败",
+        statusMessage: result.error ?? i18n.t("ai.store.coworkStepFailed"),
       });
       return result;
     }
@@ -539,8 +602,8 @@ export const useAiStore = create<AiState>((set, get) => ({
       ),
       running: true,
       runningActionId: step.actionId,
-      progressLog: [`Cowork 步骤开始：${step.label}`],
-      statusMessage: `Cowork：${step.label}…`,
+      progressLog: [i18n.t("ai.store.coworkStepStart", { label: step.label })],
+      statusMessage: i18n.t("ai.store.coworkRunning", { label: step.label }),
     });
 
     const result = await runAiAction(step.actionId, {
@@ -559,7 +622,7 @@ export const useAiStore = create<AiState>((set, get) => ({
       },
     });
 
-    const record = toResultRecord(result, `Cowork · ${step.label}`);
+    const record = toResultRecord(result, i18n.t("ai.store.coworkStepResult", { label: step.label }));
     set({
       running: false,
       runningActionId: null,
@@ -577,7 +640,9 @@ export const useAiStore = create<AiState>((set, get) => ({
             }
           : entry,
       ),
-      statusMessage: result.ok ? `Cowork 完成：${step.label}` : (result.error ?? "Cowork 步骤失败"),
+      statusMessage: result.ok
+        ? i18n.t("ai.store.coworkDone", { label: step.label })
+        : (result.error ?? i18n.t("ai.store.coworkStepFailed")),
     });
 
     return result;
@@ -592,8 +657,8 @@ export const useAiStore = create<AiState>((set, get) => ({
         resultMarkdown: undefined,
         resultId: undefined,
       })),
-      progressLog: ["Cowork 流水线开始执行…"],
-      statusMessage: "Cowork 流水线执行中…",
+      progressLog: [i18n.t("ai.store.coworkPipelineStart")],
+      statusMessage: i18n.t("ai.store.coworkPipelineRunning"),
     });
 
     let current = markdown;
@@ -612,12 +677,12 @@ export const useAiStore = create<AiState>((set, get) => ({
       markdown: current,
       actionId: "cowork:pipeline",
     };
-    const record = toResultRecord(pipelineResult, "Cowork · 全流程结果");
+    const record = toResultRecord(pipelineResult, i18n.t("ai.store.coworkFullResult"));
     set({
       lastResult: pipelineResult,
       resultHistory: [record, ...get().resultHistory].slice(0, 30),
       selectedResultId: record.id,
-      statusMessage: "Cowork 流水线已全部完成",
+      statusMessage: i18n.t("ai.store.coworkPipelineDone"),
     });
 
     return current;

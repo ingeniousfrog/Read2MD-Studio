@@ -28,6 +28,7 @@ import {
   type ThemeTokenInput,
 } from "../core/theme/themeTokens";
 import { sampleMarkdown } from "../fixtures/sampleMarkdown";
+import i18n from "../i18n";
 
 export type PlatformId = "wechat";
 export type CopyStatus = "idle" | "copying" | "success" | "error";
@@ -475,7 +476,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   themeId: initialActiveDoc?.themeId ?? defaultThemeId,
   platform: "wechat",
   copyStatus: "idle",
-  statusMessage: "草稿已自动保存",
+  statusMessage: i18n.t("editor.draftSaved"),
   warnings: [],
   customThemeTokens: initialActiveDoc?.customThemeTokens ?? defaultCustomTokens,
   customThemeName: initialActiveDoc?.customThemeName ?? "Custom",
@@ -484,12 +485,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setMarkdown: (markdown) => {
     const documents = updateActiveDocument(get, { markdown });
-    set({ markdown, documents, statusMessage: "草稿已自动保存" });
+    set({ markdown, documents, statusMessage: i18n.t("editor.draftSaved") });
   },
 
   setThemeId: (themeId) => {
     const documents = updateActiveDocument(get, { themeId });
-    set({ themeId, documents, statusMessage: "主题已更新" });
+    set({ themeId, documents, statusMessage: i18n.t("editor.themeUpdated") });
   },
 
   setPlatform: (platform) => set({ platform }),
@@ -516,7 +517,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       customThemeTokens,
       themeId: "custom",
       documents,
-      statusMessage: "自定义主题已更新",
+      statusMessage: i18n.t("editor.customThemeUpdated"),
     });
   },
 
@@ -533,7 +534,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       customThemeTokens,
       themeId: "custom",
       documents,
-      statusMessage: "标题样式已更新",
+      statusMessage: i18n.t("editor.headingStyleUpdated"),
     });
   },
 
@@ -552,7 +553,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       themeId: "custom",
       documents,
       isThemePanelOpen: true,
-      statusMessage: "已基于当前主题生成自定义主题",
+      statusMessage: i18n.t("editor.customThemeCreated"),
     });
   },
 
@@ -570,7 +571,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       customThemeTokens: tokens,
       themeId: "custom",
       documents,
-      statusMessage: "自定义主题已更新",
+      statusMessage: i18n.t("editor.customThemeUpdated"),
     });
   },
 
@@ -586,7 +587,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       documents,
       activeDocId: doc.id,
       ...documentToMirror(doc),
-      statusMessage: "已新建文档",
+      statusMessage: i18n.t("editor.newDocument"),
     });
   },
 
@@ -599,7 +600,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       activeDocId: id,
       ...documentToMirror(doc),
-      statusMessage: `已切换到：${doc.title}`,
+      statusMessage: i18n.t("editor.switchedTo", { title: doc.title }),
     });
     void get().relocalizeDocumentImagesIfNeeded(id);
   },
@@ -628,7 +629,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     persistDocuments(documents);
     set({
       documents,
-      statusMessage: `已插入图片：${filename}`,
+      statusMessage: i18n.t("editor.imageInserted", { filename }),
     });
   },
 
@@ -651,7 +652,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       set({
         documents,
         ...documentToMirror(updated),
-        statusMessage: `已本地化 ${updated.assetFiles?.length ?? 0} 张图片：${updated.title}`,
+        statusMessage: i18n.t("editor.imagesLocalized", {
+          count: updated.assetFiles?.length ?? 0,
+          title: updated.title,
+        }),
       });
       return;
     }
@@ -671,7 +675,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const isActive = get().activeDocId === id;
     set({
       documents,
-      ...(isActive ? { statusMessage: `已重命名为：${trimmed}` } : {}),
+      ...(isActive ? { statusMessage: i18n.t("editor.renamedTo", { title: trimmed }) } : {}),
     });
   },
 
@@ -687,7 +691,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         documents,
         activeDocId: null,
         ...emptyWorkspaceMirror(),
-        statusMessage: "已删除全部文档",
+        statusMessage: i18n.t("editor.allDocumentsDeleted"),
       });
       return;
     }
@@ -699,12 +703,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         documents,
         activeDocId: next.id,
         ...documentToMirror(next),
-        statusMessage: `已删除文档，切换到：${next.title}`,
+        statusMessage: i18n.t("editor.deletedSwitchedTo", { title: next.title }),
       });
       return;
     }
 
-    set({ documents, statusMessage: "已删除文档" });
+    set({ documents, statusMessage: i18n.t("editor.documentDeleted") });
   },
 
   importUrlToNewDoc: async (url) => {
@@ -744,7 +748,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       documents,
       activeDocId: doc.id,
       ...documentToMirror(doc),
-      statusMessage: `已导入：${doc.title}${warningSuffix}`,
+      statusMessage: i18n.t("editor.imported", { title: doc.title, suffix: warningSuffix }),
       warnings: localized.warnings,
     });
 
@@ -769,7 +773,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       savedThemes,
       themeActionStatus: { tone: "success", message: `主题已保存：${trimmed}` },
-      statusMessage: `主题已保存：${trimmed}`,
+      statusMessage: i18n.t("editor.themeSaved", { name: trimmed }),
     });
   },
 
@@ -790,14 +794,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       customThemeName: preset.name,
       themeId: "custom",
       documents,
-      statusMessage: `已应用主题：${preset.name}`,
+      statusMessage: i18n.t("editor.themeApplied", { name: preset.name }),
     });
   },
 
   removeSavedTheme: (id) => {
     const savedThemes = get().savedThemes.filter((theme) => theme.id !== id);
     persistSavedThemes(savedThemes);
-    set({ savedThemes, statusMessage: "已删除保存的主题" });
+    set({ savedThemes, statusMessage: i18n.t("editor.savedThemeDeleted") });
   },
 }));
 

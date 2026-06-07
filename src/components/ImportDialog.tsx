@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { detectImportUrlKind } from "../core/import/fetchImportUrl";
 
 interface ImportDialogProps {
@@ -7,6 +8,7 @@ interface ImportDialogProps {
 }
 
 export function ImportDialog({ onClose, onImportUrl }: ImportDialogProps) {
+  const { t } = useTranslation();
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,12 +22,12 @@ export function ImportDialog({ onClose, onImportUrl }: ImportDialogProps) {
 
     try {
       if (!trimmedUrl) {
-        setStatus("请输入网页链接。");
+        setStatus(t("import.enterUrl"));
         return;
       }
 
       if (!detectedKind) {
-        setStatus("请输入有效的 http 或 https 链接。");
+        setStatus(t("import.invalidUrl"));
         return;
       }
 
@@ -51,27 +53,25 @@ export function ImportDialog({ onClose, onImportUrl }: ImportDialogProps) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="import-dialog-header">
-          <h2 id="import-dialog-title">导入 URL</h2>
-          <button type="button" aria-label="关闭" onClick={onClose}>
+          <h2 id="import-dialog-title">{t("import.title")}</h2>
+          <button type="button" aria-label={t("common.close")} onClick={onClose}>
             ×
           </button>
         </div>
 
-        <p className="import-dialog-hint">
-          粘贴任意网页链接，系统将自动抓取 HTML 并转换为 Markdown。微信公众号与其他博客/文档页均支持。
-        </p>
+        <p className="import-dialog-hint">{t("import.hint")}</p>
 
         {detectedKind && (
           <p className="import-dialog-detect">
-            检测到：{detectedKind === "wechat" ? "微信公众号文章" : "普通网页"}
+            {detectedKind === "wechat" ? t("import.detectWechat") : t("import.detectGeneric")}
           </p>
         )}
 
         <label className="import-dialog-field">
-          <span>网页链接</span>
+          <span>{t("import.urlLabel")}</span>
           <input
             type="url"
-            placeholder="https://mp.weixin.qq.com/s/... 或 https://example.com/blog/..."
+            placeholder={t("import.urlPlaceholder")}
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             onKeyDown={(event) => {
@@ -86,10 +86,10 @@ export function ImportDialog({ onClose, onImportUrl }: ImportDialogProps) {
 
         <div className="import-dialog-actions">
           <button type="button" className="import-secondary-button" onClick={onClose}>
-            取消
+            {t("common.cancel")}
           </button>
           <button type="button" className="import-button" onClick={handleSubmit} disabled={loading}>
-            {loading ? "导入中..." : "导入"}
+            {loading ? t("import.importing") : t("import.import")}
           </button>
         </div>
       </div>

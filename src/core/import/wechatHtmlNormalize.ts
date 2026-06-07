@@ -1,5 +1,59 @@
 const PRESERVE_CLASS = "r2md-keep";
 
+function parseFontSizePx(style: string): number | null {
+  const match = /font-size:\s*([\d.]+)\s*px/i.exec(style);
+  return match ? Number(match[1]) : null;
+}
+
+function combinedStyle(element: Element): string {
+  const styles: string[] = [];
+  let current: Element | null = element;
+  while (current && current.tagName !== "DIV" && styles.join().length < 2000) {
+    const style = current.getAttribute("style");
+    if (style) {
+      styles.push(style);
+    }
+    current = current.parentElement;
+  }
+  return styles.join(";");
+}
+
+function hasTransform(style: string): boolean {
+  return /transform\s*:/i.test(style);
+}
+
+function hasFlexLayout(style: string): boolean {
+  return /display\s*:\s*flex/i.test(style);
+}
+
+function isHiddenElement(element: Element): boolean {
+  const style = (element.getAttribute("style") ?? "").replace(/\s+/g, "").toLowerCase();
+  return style.includes("visibility:hidden") || style.includes("opacity:0");
+}
+
+function compactText(element: Element): string {
+  return (element.textContent ?? "").replace(/\s+/g, "").trim();
+}
+
+function maxFontSizeInSubtree(element: Element): number {
+  let max = parseFontSizePx(element.getAttribute("style") ?? "") ?? 0;
+  for (const node of element.querySelectorAll("[style*='font-size']")) {
+    const size = parseFontSizePx(node.getAttribute("style") ?? "");
+    if (size && size > max) {
+      max = size;
+    }
+  }
+  return max;
+}
+
+function isTextOnlySpan(span: Element): boolean {
+  return Array.from(span.childNodes).every(
+    (node) =>
+      node.nodeType === Node.TEXT_NODE ||
+      (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === "BR"),
+  );
+}
+
 function isWechatStatParagraph(element: Element): boolean {
   if (element.tagName !== "P") {
     return false;
@@ -10,6 +64,158 @@ function isWechatStatParagraph(element: Element): boolean {
 function hasAccentStyle(style: string): boolean {
   const normalized = style.replace(/\s+/g, "").toLowerCase();
   return normalized.includes("border-left") || normalized.includes("background");
+}
+
+function removeHiddenSubtrees(root: Element): void {
+  for (const element of Array.from(root.querySelectorAll("[style]"))) {
+    if (isHiddenElement(element)) {
+      element.remove();
+    }
+  }
+}
+
+function removeDecorativeSingleCharParagraphs(root: Element): void {
+  for (const paragraph of Array.from(root.querySelectorAll("p"))) {
+    const text = paragraph.textContent?.trim() ?? "";
+    if (text.length !== 1 || /^\d$/.test(text)) {
+      continue;
+    }
+
+    const style = combinedStyle(paragraph);
+    const maxFontSize = maxFontSizeInSubtree(paragraph.closest("section") ?? paragraph);
+
+    if (
+      hasTransform(style) ||
+      maxFontSize >= 36 ||
+      (hasFlexLayout(style) && /[\u4e00-\u9fff]/.test(text))
+    ) {
+      paragraph.remove();
+    }
+  }
+}
+
+function removeWordCloudSections(root: Element): void {
+  for (const section of Array.from(root.querySelectorAll("section"))) {
+    if (section.classList.contains(PRESERVE_CLASS)) {
+      continue;
+    }
+    if (!section.querySelector("[style*='text-shadow']")) {
+      continue;
+    }
+    const paragraphLengths = Array.from(section.querySelectorAll("p")).map((paragraph) =>
+      compactText(paragraph).length,
+    );
+    const longestParagraph = paragraphLengths.length > 0 ? Math.max(...paragraphLengths) : 0;
+    if (longestParagraph <= 40 && compactText(section).length <= 220) {
+      section.remove();
+    }
+  }
+}
+
+function convertFlexNumberedRows(root: Element): void {
+  const candidates: Element[] = [];
+
+  for (const row of Array.from(root.querySelectorAll("section"))) {
+    if (!hasFlexLayout(row.getAttribute("style") ?? "")) {
+      continue;
+    }
+
+    const columns = Array.from(row.children).filter((child) => child.tagName === "SECTION");
+    if (columns.length !== 2) {
+      continue;
+    }
+
+    const marker = compactText(columns[0]);
+    const body = compactText(columns[1]);
+    if (/^[1-9]\d*$/.test(marker) && body.length >= 4) {
+      candidates.push(row);
+    }
+  }
+
+  let index = 0;
+  while (index < candidates.length) {
+    const group: Element[] = [candidates[index]];
+    index += 1;
+
+    while (
+      index < candidates.length &&
+      candidates[index].previousElementSibling === group[group.length - 1]
+    ) {
+      group.push(candidates[index]);
+      index += 1;
+    }
+
+    const list = root.ownerDocument.createElement("ol");
+    group[0].before(list);
+
+    for (const row of group) {
+      const columns = Array.from(row.children).filter((child) => child.tagName === "SECTION");
+      const item = root.ownerDocument.createElement("li");
+      item.textContent = columns[1]?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+      list.appendChild(item);
+      row.remove();
+    }
+  }
+}
+
+function removeDecorativeLayoutSections(root: Element): void {
+  for (const section of Array.from(root.querySelectorAll("section"))) {
+    if (section.classList.contains(PRESERVE_CLASS)) {
+      continue;
+    }
+
+    const textLength = compactText(section).length;
+    const style = combinedStyle(section);
+    const maxFontSize = maxFontSizeInSubtree(section);
+    const transformed = hasTransform(style);
+    const flexLayout = hasFlexLayout(style);
+
+    const isShortDecorativeBlock =
+      textLength > 0 &&
+      textLength <= 24 &&
+      (transformed || maxFontSize >= 36 || (flexLayout && textLength <= 12));
+
+    const isEmptyLayoutShell =
+      textLength === 0 &&
+      (transformed || flexLayout) &&
+      !section.querySelector("img, video, iframe, table, pre, code, svg");
+
+    if (isShortDecorativeBlock || isEmptyLayoutShell) {
+      section.remove();
+    }
+  }
+}
+
+function unwrapRedundantSections(root: Element): void {
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const section of Array.from(root.querySelectorAll("section"))) {
+      if (section.classList.contains(PRESERVE_CLASS)) {
+        continue;
+      }
+
+      const meaningful = Array.from(section.childNodes).filter((node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return (node.textContent?.trim().length ?? 0) > 0;
+        }
+        return true;
+      });
+
+      if (
+        meaningful.length === 1 &&
+        meaningful[0].nodeType === Node.ELEMENT_NODE &&
+        (meaningful[0] as Element).tagName === "SECTION"
+      ) {
+        const child = meaningful[0] as Element;
+        while (child.firstChild) {
+          section.insertBefore(child.firstChild, child);
+        }
+        child.remove();
+        changed = true;
+      }
+    }
+  }
 }
 
 function removeEmptyTables(root: Element): void {
@@ -28,19 +234,23 @@ function flattenTableCells(root: Element): void {
 }
 
 function unwrapLeafSpans(root: Element): void {
-  for (const span of Array.from(root.querySelectorAll("span"))) {
-    const style = span.getAttribute("style") ?? "";
-    const isBadge = style.includes("inline-block") && style.includes("border-radius");
-    if (isBadge) {
-      continue;
+  for (let pass = 0; pass < 4; pass += 1) {
+    let changed = false;
+    for (const span of Array.from(root.querySelectorAll("span"))) {
+      const style = span.getAttribute("style") ?? "";
+      const isBadge = style.includes("inline-block") && style.includes("border-radius");
+      if (isBadge) {
+        continue;
+      }
+      if (!isTextOnlySpan(span)) {
+        continue;
+      }
+      span.replaceWith(span.ownerDocument.createTextNode(span.textContent ?? ""));
+      changed = true;
     }
-    if (style && !span.hasAttribute("leaf")) {
-      continue;
+    if (!changed) {
+      break;
     }
-    if (span.children.length > 0 && !span.hasAttribute("leaf")) {
-      continue;
-    }
-    span.replaceWith(span.ownerDocument.createTextNode(span.textContent ?? ""));
   }
 }
 
@@ -121,6 +331,12 @@ export function normalizeWechatHtmlForMarkdown(html: string): string {
     return html;
   }
 
+  removeHiddenSubtrees(root);
+  convertFlexNumberedRows(root);
+  removeDecorativeLayoutSections(root);
+  removeWordCloudSections(root);
+  removeDecorativeSingleCharParagraphs(root);
+  unwrapRedundantSections(root);
   removeEmptyTables(root);
   flattenTableCells(root);
   unwrapLeafSpans(root);

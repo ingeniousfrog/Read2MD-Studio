@@ -1,3 +1,4 @@
+import i18n from "../../i18n";
 import type { PlatformOutput } from "../platform/commonAdapter";
 
 export type CopyMode = "html" | "plain-text-fallback";
@@ -13,7 +14,7 @@ export async function copyHtml(output: PlatformOutput): Promise<CopyResult> {
     return {
       ok: false,
       mode: "plain-text-fallback",
-      message: "当前浏览器不支持剪贴板写入。",
+      message: i18n.t("copy.clipboardUnsupported"),
     };
   }
 
@@ -29,7 +30,7 @@ export async function copyHtml(output: PlatformOutput): Promise<CopyResult> {
     return {
       ok: true,
       mode: "html",
-      message: "已复制公众号 HTML，可直接粘贴。",
+      message: i18n.t("copy.htmlCopied"),
     };
   }
 
@@ -38,6 +39,6 @@ export async function copyHtml(output: PlatformOutput): Promise<CopyResult> {
   return {
     ok: true,
     mode: "plain-text-fallback",
-    message: "浏览器不支持 HTML 剪贴板，已降级复制纯文本。",
+    message: i18n.t("copy.plainTextFallback"),
   };
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { AiApplyMode } from "../core/ai/types";
 import { useEditorStore } from "../store/editorStore";
 
@@ -7,6 +8,7 @@ interface AiResultActionsProps {
 }
 
 export function AiResultActions({ markdown, onApplied }: AiResultActionsProps) {
+  const { t } = useTranslation();
   const currentMarkdown = useEditorStore((state) => state.markdown);
   const setMarkdown = useEditorStore((state) => state.setMarkdown);
   const createDocument = useEditorStore((state) => state.createDocument);
@@ -31,9 +33,9 @@ export function AiResultActions({ markdown, onApplied }: AiResultActionsProps) {
     const newDocId = useEditorStore.getState().activeDocId;
     setMarkdown(markdown);
     if (newDocId) {
-      renameDocument(newDocId, "AI 生成");
+      renameDocument(newDocId, t("ai.newDocTitle"));
     } else if (activeDocId) {
-      renameDocument(activeDocId, "AI 生成");
+      renameDocument(activeDocId, t("ai.newDocTitle"));
     }
     onApplied?.();
   };
@@ -41,13 +43,13 @@ export function AiResultActions({ markdown, onApplied }: AiResultActionsProps) {
   return (
     <div className="ai-result-actions">
       <button type="button" className="ghost-button" onClick={() => apply("append")}>
-        插入文末
+        {t("ai.append")}
       </button>
       <button type="button" className="ghost-button" onClick={() => apply("replace")}>
-        替换全文
+        {t("ai.replace")}
       </button>
       <button type="button" className="import-button" onClick={() => apply("new-doc")}>
-        另存为新文档
+        {t("ai.saveAsNew")}
       </button>
     </div>
   );
