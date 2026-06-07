@@ -19,7 +19,8 @@ function combinedStyle(element: Element): string {
 }
 
 function hasTransform(style: string): boolean {
-  return /transform\s*:/i.test(style);
+  const withoutTextTransform = style.replace(/text-transform\s*:[^;]*/gi, "");
+  return /(?:^|;)transform\s*:/i.test(withoutTextTransform.replace(/\s+/g, ""));
 }
 
 function hasFlexLayout(style: string): boolean {
@@ -161,6 +162,9 @@ function convertFlexNumberedRows(root: Element): void {
 function removeDecorativeLayoutSections(root: Element): void {
   for (const section of Array.from(root.querySelectorAll("section"))) {
     if (section.classList.contains(PRESERVE_CLASS)) {
+      continue;
+    }
+    if (section.closest("li, td, th, figcaption, blockquote, h1, h2, h3, h4")) {
       continue;
     }
 
@@ -307,10 +311,10 @@ function preserveStyledBlockquotes(root: Element): void {
     if (!hasAccentStyle(style)) {
       continue;
     }
-    const wrapper = root.ownerDocument.createElement("div");
-    wrapper.className = `${PRESERVE_CLASS} r2md-wechat-callout`;
-    blockquote.replaceWith(wrapper);
-    wrapper.appendChild(blockquote);
+    blockquote.removeAttribute("style");
+    for (const node of Array.from(blockquote.querySelectorAll("[style]"))) {
+      node.removeAttribute("style");
+    }
   }
 }
 
@@ -324,6 +328,23 @@ function walkAndGroupStats(root: Element): void {
   }
 }
 
+type NormalizeStep = (root: Element) => void;
+
+const NORMALIZE_STEPS: NormalizeStep[] = [
+  removeHiddenSubtrees,
+  convertFlexNumberedRows,
+  removeDecorativeLayoutSections,
+  removeWordCloudSections,
+  removeDecorativeSingleCharParagraphs,
+  unwrapRedundantSections,
+  removeEmptyTables,
+  flattenTableCells,
+  unwrapLeafSpans,
+  walkAndGroupStats,
+  preserveStyledHeadings,
+  preserveStyledBlockquotes,
+];
+
 export function normalizeWechatHtmlForMarkdown(html: string): string {
   const document = new DOMParser().parseFromString(`<div id="r2md-root">${html}</div>`, "text/html");
   const root = document.getElementById("r2md-root");
@@ -331,18 +352,9 @@ export function normalizeWechatHtmlForMarkdown(html: string): string {
     return html;
   }
 
-  removeHiddenSubtrees(root);
-  convertFlexNumberedRows(root);
-  removeDecorativeLayoutSections(root);
-  removeWordCloudSections(root);
-  removeDecorativeSingleCharParagraphs(root);
-  unwrapRedundantSections(root);
-  removeEmptyTables(root);
-  flattenTableCells(root);
-  unwrapLeafSpans(root);
-  walkAndGroupStats(root);
-  preserveStyledHeadings(root);
-  preserveStyledBlockquotes(root);
+  for (const step of NORMALIZE_STEPS) {
+    step(root);
+  }
 
   return root.innerHTML;
 }

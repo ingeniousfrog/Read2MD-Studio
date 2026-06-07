@@ -128,6 +128,10 @@ function repairMarkdownTables(markdown: string): string {
 }
 
 /** Collapse 3+ newlines to 2, but only outside fenced code blocks. */
+function removeEmptyNumberedListItems(markdown: string): string {
+  return markdown.replace(/^\d+\.\s*$/gm, "");
+}
+
 function collapseBlankLinesOutsideCode(markdown: string): string {
   const segments = markdown.split(/(```[\s\S]*?```)/g);
   return segments
@@ -155,6 +159,7 @@ export function htmlToMarkdown(
   body = removeDecorativeHeadingLines(body);
   body = removeSparseDecorativeLines(body);
   body = removeStandaloneSingleCharLines(body);
+  body = removeEmptyNumberedListItems(body);
   body = collapseBlankLinesOutsideCode(body);
 
   if (!title) {

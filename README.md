@@ -58,7 +58,7 @@ xattr -cr /Applications/Read2MD-Studio.app
 - **AI 助手（仅桌面版）**：Preview 页眉入口，调用本地 Codex CLI；支持论文结构化、Mermaid 图解、风格改写与可编辑 Cowork 流水线；运行日志与多步结果分别查看
 - **布局**：顶部工具栏、左侧文档边栏与各面板标题栏固定，仅编辑区 / 预览正文滚动
 
-### 桌面版 AI 助手（0.2.0）
+### 桌面版 AI 助手（0.3.0）
 
 | 模块 | 说明 |
 |------|------|
@@ -76,7 +76,7 @@ xattr -cr /Applications/Read2MD-Studio.app
 
 ## 更新日志
 
-### v0.2.0（当前版本）
+### v0.3.0（当前版本）
 
 - 新增桌面端 **AI 助手**：基于本地 Codex CLI（`codex login` / `codex exec`），Web 版不可用
 - AI 入口移至 **Preview 页眉**；工具栏保留「设置」与「复制到公众号」
@@ -271,10 +271,10 @@ npm run tauri:dev
 
 # 打包 dmg
 npm run tauri:build
-# 产物：src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.2.0_aarch64.dmg
+# 产物：src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.3.0_aarch64.dmg
 ```
 
-当前版本：**0.2.0**。预构建 dmg 见 [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases)。
+当前版本：**0.3.0**。预构建 dmg 见 [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases)。
 
 **AI 助手：** 需本机已安装 Codex CLI（`codex --version` 可检查）。首次使用：工具栏 **设置** → **登录 Codex**（浏览器 OAuth）；设置页显示绿点「已登录」后即可使用。Preview 页眉 **AI 助手** 打开能力面板；可在设置中为不同能力单独选择模型。
 

@@ -58,7 +58,7 @@ You can also **right-click Read2MD-Studio → Open** in Applications (confirm on
 - **AI assistant (desktop only)**: Entry on the Preview header; calls the local Codex CLI for paper structuring, Mermaid diagrams, style rewriting, and an editable Cowork pipeline; live run logs and per-step result history
 - **Layout**: Toolbar, document sidebar, and pane headers stay fixed; only editor and preview content scroll
 
-### Desktop AI assistant (0.2.0)
+### Desktop AI assistant (0.3.0)
 
 | Module | Description |
 |--------|-------------|
@@ -76,7 +76,7 @@ You can also **right-click Read2MD-Studio → Open** in Applications (confirm on
 
 ## Changelog
 
-### v0.2.0 (current)
+### v0.3.0 (current)
 
 - **AI assistant** on desktop via local Codex CLI (`codex login` / `codex exec`); not available on Web
 - AI entry moved to **Preview header**; toolbar keeps Settings and Copy to WeChat
@@ -271,10 +271,10 @@ npm run tauri:dev
 
 # Build dmg
 npm run tauri:build
-# Output: src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.2.0_aarch64.dmg
+# Output: src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.3.0_aarch64.dmg
 ```
 
-Current version: **0.2.0**. Pre-built dmg: [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases).
+Current version: **0.3.0**. Pre-built dmg: [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases).
 
 **AI assistant:** Requires Codex CLI installed locally (`codex --version`). First run: toolbar **Settings** → **Log in to Codex** (browser OAuth). When Settings shows a green **Logged in** status, you are ready. Open **AI assistant** from the Preview header; pick a model per capability in Settings.
 
