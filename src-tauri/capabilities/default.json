@@ -65,6 +65,8 @@
         { "path": "$APPDATA/read2md-studio" },
         { "path": "$APPDATA/read2md-studio/**" }
       ]
-    }
+    },
+    "clipboard-manager:allow-write-html",
+    "clipboard-manager:allow-write-text"
   ]
 }
