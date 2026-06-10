@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Build Windows NSIS installer (.exe)
-        run: npm run tauri build -- --bundles nsis
+        run: npm run tauri:build -- --bundles nsis
 
       - name: List bundle output
         run: Get-ChildItem -Recurse src-tauri\target\release\bundle\nsis\
