@@ -3,3 +3,6 @@ dist/
 .playwright-mcp/
 *.tsbuildinfo
 .DS_Store
+
+# 个人文章草稿，不进仓库
+wechat-article.md
