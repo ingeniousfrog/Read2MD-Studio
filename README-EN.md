@@ -13,7 +13,7 @@ A lightweight Markdown publishing workbench: write, preview in real time, apply 
 Markdown editing → Live preview → Theme styling → Platform HTML → Clipboard
 ```
 
-Available as a **Web app** (browser) and **macOS desktop app** (Tauri). Business logic lives in the TypeScript `core/` layer; the UI only composes and interacts—making it easy to add adapters for Zhihu, Juejin, and other platforms later.
+Available as a **Web app** (browser) and **desktop app** (Tauri, **macOS** / **Windows**). Business logic lives in the TypeScript `core/` layer; the UI only composes and interacts—making it easy to add adapters for Zhihu, Juejin, and other platforms later.
 
 ### Web vs desktop
 
@@ -24,7 +24,7 @@ Available as a **Web app** (browser) and **macOS desktop app** (Tauri). Business
 | URL import (with image localization) | Dev proxy only; production needs your own API | ✅ Native HTTP, no CORS |
 | **AI assistant (local Codex)** | ❌ **Not available** | ✅ |
 
-**The AI assistant is desktop-only.** It invokes the locally installed [Codex CLI](https://github.com/openai/codex) (`codex login` / `codex exec`) through Tauri. Browsers cannot spawn local processes for security reasons, so visiting `http://127.0.0.1` via `npm run dev` **does not** enable AI. Use `npm run tauri:dev` or install the `.dmg` instead.
+**The AI assistant is desktop-only.** It invokes the locally installed [Codex CLI](https://github.com/openai/codex) (`codex login` / `codex exec`) through Tauri. Browsers cannot spawn local processes for security reasons, so visiting `http://127.0.0.1` via `npm run dev` **does not** enable AI. Use `npm run tauri:dev`, or install the **macOS .dmg** / **Windows installer** from [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases).
 
 ---
 
@@ -32,8 +32,11 @@ Available as a **Web app** (browser) and **macOS desktop app** (Tauri). Business
 
 | Platform | Notes |
 |----------|-------|
-| [GitHub Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases) | macOS arm64 `.dmg` (Apple Silicon) |
+| [GitHub Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases) | **macOS Apple Silicon (arm64):** `Read2MD-Studio_0.3.0_aarch64.dmg` |
+| Same | **Windows 10/11 (x64):** `Read2MD-Studio_0.3.0_x64-setup.exe` |
 | Web | Run `npm run dev` locally, or `npm run build` and deploy `dist/` |
+
+### macOS install notes
 
 The desktop build is **ad-hoc signed and not notarized**. If Safari shows “damaged” or the app won’t open after download, run this in Terminal and try again:
 
@@ -42,6 +45,12 @@ xattr -cr /Applications/Read2MD-Studio.app
 ```
 
 You can also **right-click Read2MD-Studio → Open** in Applications (confirm once on first launch). If it still fails, remove the old app and reinstall the latest dmg from Releases.
+
+### Windows install notes
+
+- For **Windows 10 / 11, 64-bit (x64)**
+- Requires **Microsoft Edge WebView2** (usually preinstalled on Win10/11)
+- Run `Read2MD-Studio_0.3.0_x64-setup.exe` and follow the NSIS installer; launch from the Start menu or desktop shortcut
 
 ---
 
@@ -78,13 +87,15 @@ You can also **right-click Read2MD-Studio → Open** in Applications (confirm on
 
 ### v0.3.0 (current)
 
-- **AI assistant** on desktop via local Codex CLI (`codex login` / `codex exec`); not available on Web
-- AI entry moved to **Preview header**; toolbar keeps Settings and Copy to WeChat
-- **Settings modal**: Codex login status, path detection, per-capability models
-- **Cowork pipeline**: editable steps (action, order, add/remove, restore default), run all, persisted config
-- **Run log** and **result history**; review each Cowork step separately
-- **Mermaid preview** with auto-quoting for labels containing brackets (e.g. `dp[i]`)
-- Copy updates: “WeChat · relaxed tone” and related labels
+- **Bilingual UI**: Toolbar language switch; full i18n across the app
+- **Codex usage**: Settings page shows Session / Weekly quota and Credits
+- **Long-image export**: Export the Preview pane as PNG in one click
+- **Mermaid stability**: Live preview; diagrams rasterized to images when copying for WeChat
+- **WeChat import fixes**: List items, display math, blockquote raw HTML leaks
+- **WeChat copy fix**: Desktop native clipboard API; long posts with Mermaid copy more reliably
+- **AI assistant** on desktop via local Codex CLI; not available on Web
+- **Cowork pipeline**: Editable steps, run all, persisted config
+- **Windows desktop**: x64 installer (`.exe`) on Releases
 
 ### v0.1.0
 
@@ -261,22 +272,23 @@ Open http://127.0.0.1:3000/
 
 **AI assistant:** Not available on Web. The Preview header “AI assistant” button is disabled in the browser.
 
-### Desktop (macOS)
+### Desktop (macOS / Windows)
 
-**Requirements:** [Rust](https://www.rust-lang.org/tools/install) 1.77+, Xcode Command Line Tools
+**Requirements:** [Rust](https://www.rust-lang.org/tools/install) 1.77+; macOS also needs Xcode Command Line Tools
 
 ```bash
 # Development
 npm run tauri:dev
 
-# Build dmg
+# Local build (output depends on host OS)
 npm run tauri:build
-# Output: src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.3.0_aarch64.dmg
+# macOS: src-tauri/target/release/bundle/dmg/Read2MD-Studio_0.3.0_aarch64.dmg
+# Windows: src-tauri/target/release/bundle/nsis/Read2MD-Studio_0.3.0_x64-setup.exe
 ```
 
-Current version: **0.3.0**. Pre-built dmg: [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases).
+Current version: **0.3.0**. Pre-built installers: [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases) (macOS dmg / Windows exe).
 
-**AI assistant:** Requires Codex CLI installed locally (`codex --version`). First run: toolbar **Settings** → **Log in to Codex** (browser OAuth). When Settings shows a green **Logged in** status, you are ready. Open **AI assistant** from the Preview header; pick a model per capability in Settings.
+**AI assistant:** Requires Codex CLI installed locally (`codex --version`). First run: toolbar **Settings** → **Log in to Codex** (browser OAuth). When Settings shows a green **Logged in** status, you are ready. Open **AI assistant** from the Preview header; pick a model per capability in Settings. Supported on both macOS and Windows desktop builds.
 
 ### Production build (Web)
 
@@ -295,7 +307,7 @@ npm run preview  # Preview dist locally
 | `npm run build` | TypeScript check + production build |
 | `npm run preview` | Preview production build |
 | `npm run tauri:dev` | Tauri dev mode (native window) |
-| `npm run tauri:build` | Build macOS dmg |
+| `npm run tauri:build` | Build desktop installer (macOS: dmg; Windows: exe) |
 
 ---
 
@@ -339,5 +351,5 @@ Third-party packages have their own licenses; keep the `LICENSE` file when redis
 - **Production Web deploy** has no URL fetch proxy or full image localization; use the desktop app for image-heavy workflows
 - Only WeChat copy adapter implemented; Zhihu / Juejin etc. planned
 - No cloud sync or user accounts; drafts and images stay on the local machine
-- Desktop dmg is ad-hoc signed and not notarized
+- macOS desktop build is ad-hoc signed and not notarized; Windows pre-built installer on [Releases](https://github.com/ingeniousfrog/Read2MD-Studio/releases)
 - Some WeChat article imports may trigger environment verification depending on network
